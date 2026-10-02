@@ -10,6 +10,7 @@
     ]
   },
   "scripts": {
+    "execute:plan": "tsx scripts/execute-plan.ts",
     "format": "yarn next:format && yarn hardhat:format && yarn sdk:format",
     "gate:check": "node scripts/gate-check.mjs",
     "gate:check:local": "node scripts/gate-check.mjs --local",
@@ -40,7 +41,7 @@
     "next:start": "yarn workspace @sh/nextjs start",
     "postinstall": "husky",
     "precommit": "lint-staged",
-    "scripts:check-types": "yarn workspace @sh/router-sdk tsc -p ../../scripts/tsconfig.json",
+    "scripts:check-types": "tsc -p scripts/tsconfig.json",
     "scripts:format": "yarn workspace @sh/router-sdk prettier --write ../../scripts/*.ts ../../scripts/*.mjs",
     "sdk:build": "yarn workspace @sh/router-sdk build",
     "sdk:check-types": "yarn workspace @sh/router-sdk check-types",
@@ -50,14 +51,20 @@
     "sdk:quote": "yarn workspace @sh/router-sdk quote",
     "sdk:test": "yarn workspace @sh/router-sdk test",
     "sdk:test:coverage": "yarn workspace @sh/router-sdk test:coverage",
-    "seed:testnet": "yarn workspace @sh/router-sdk tsx ../../scripts/seed-testnet.ts",
+    "seed:testnet": "tsx scripts/seed-testnet.ts",
     "test": "yarn sdk:test && yarn hardhat:test",
-    "topic:create": "yarn workspace @sh/router-sdk tsx ../../scripts/create-topic.ts"
+    "topic:create": "tsx scripts/create-topic.ts"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {
+    "@hiero-ledger/sdk": "^2.80.0",
+    "@types/node": "^20.17.0",
+    "dotenv": "~16.4.5",
     "husky": "^9.1.6",
-    "lint-staged": "^15.2.10"
+    "lint-staged": "^15.2.10",
+    "tsx": "^4.23.15",
+    "typescript": "^5.8.2",
+    "viem": "2.39.0"
   },
   "engines": {
     "node": ">=20.18.3"

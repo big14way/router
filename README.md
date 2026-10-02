@@ -69,7 +69,7 @@ Everything below is reproducible with a faucet account. Addresses and transactio
 3. **Create the receipts topic.** Put the account's `0.0.x` ID and key in `.env` as `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY`, then `yarn topic:create` → `NEXT_PUBLIC_RECEIPTS_TOPIC_ID=0.0.y`.
 4. **Seed demo liquidity (optional but recommended).** `yarn seed:testnet` creates two HTS tokens, a V1 pair and a V2 pool with deliberately different prices so a split beats either venue, and prints `NEXT_PUBLIC_EXTRA_TOKENS=TKA:0.0.a:8,TKB:0.0.b:8` for `.env`.
 5. **Plan.** `yarn sdk:plan --net testnet --in TKA --out TKB --amount 1000` shows the split and the gain over the best single venue.
-6. **Execute.** `yarn next:dev`, open `/swap`, connect a wallet on Hedera testnet (chain 296), pick the pair. The page runs the pre-flight (associate the output token with one click, approve `RouterExecutor`), then executes `executeSplit` atomically. HBAR input is sent as `msg.value`.
+6. **Execute.** From the terminal, `yarn execute:plan --net testnet --in HBAR --out SAUCE --amount 1` plans, runs the pre-flight, executes through `RouterExecutor`, publishes the receipt and verifies it in one go (this is how the evidence below was produced). In the browser, `yarn next:dev`, open `/swap`, connect a wallet on Hedera testnet (chain 296), pick the pair. The page runs the pre-flight (associate the output token with one click, approve `RouterExecutor`), then executes `executeSplit` atomically. HBAR input is sent as `msg.value`.
 7. **Verify.** The success panel links to HashScan and to `/receipts/<sequence>`, where the receipt is read back from the mirror node and matched against the `RouteExecuted` log's `planHash`.
 
 ## Mainnet execution walkthrough

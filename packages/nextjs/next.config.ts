@@ -1,5 +1,9 @@
+import { config as dotenv } from "dotenv";
 import type { NextConfig } from "next";
 import path from "path";
+
+// The template keeps one .env at the repo root (generated from template.json); load it for the app too.
+dotenv({ path: path.join(__dirname, "../../.env") });
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),

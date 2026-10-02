@@ -1,21 +1,5 @@
 {
   "extends": "../packages/router-sdk/tsconfig.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "types": [
-      "node"
-    ],
-    "typeRoots": [
-      "../packages/router-sdk/node_modules/@types"
-    ],
-    "paths": {
-      "*": [
-        "../packages/router-sdk/node_modules/*"
-      ]
-    },
-    "noEmit": true
-  },
-  "include": [
-    "./*.ts"
-  ]
+  "compilerOptions": { "types": ["node"], "noEmit": true },
+  "include": ["./*.ts"]
 }

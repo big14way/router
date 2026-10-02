@@ -3605,6 +3605,7 @@ __metadata:
     blo: ^1.2.0
     burner-connector: 0.0.20
     daisyui: ^5.0.9
+    dotenv: ~16.4.5
     eslint: ^9.23.0
     eslint-config-next: ^15.2.3
     eslint-config-prettier: ^10.1.1
@@ -10214,8 +10215,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "hedera-smart-order-router@workspace:."
   dependencies:
+    "@hiero-ledger/sdk": ^2.80.0
+    "@types/node": ^20.17.0
+    dotenv: ~16.4.5
     husky: ^9.1.6
     lint-staged: ^15.2.10
+    tsx: ^4.23.15
+    typescript: ^5.8.2
+    viem: 2.39.0
   languageName: unknown
   linkType: soft
 

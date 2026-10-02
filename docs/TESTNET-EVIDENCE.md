@@ -6,23 +6,43 @@ Network: Hedera testnet (chain 296). Links are HashScan and mirror node (`https:
 
 | Role | EVM address | Account ID | Notes |
 |---|---|---|---|
-| Deployer / operator | `0xf334EBBF2A14108C324E22aEc7b421A87Aae6039` | _pending funding_ | generated locally (`DEPLOYER_PRIVATE_KEY` in the untracked `.env`); auto-created on first faucet transfer |
+| Deployer / operator | `0xf334EBBF2A14108C324E22aEc7b421A87Aae6039` | [0.0.10833326](https://hashscan.io/testnet/account/0.0.10833326) | generated locally (`DEPLOYER_PRIVATE_KEY` in the untracked `.env`); auto-created by the faucet transfer (10 HBAR) on 3 Oct 2026 |
 
 ## RouterExecutor
 
-_pending: deployed address, HashScan link, Sourcify verification._
+| | |
+|---|---|
+| Address | `0x4d0049980a29A6C583163883D102F13AB6C74274` = [0.0.10833336](https://hashscan.io/testnet/contract/0x4d0049980a29A6C583163883D102F13AB6C74274) |
+| Deploy tx | `0xa4148c8eccc05fd87e62db0d57184ab6c59821275e34f588a28e96718b18920c` (1 485 565 gas) |
+| Constructor | V1 RouterV3 0.0.19264, V2 SwapRouter 0.0.1414040, WHBAR token 0.0.15058, WhbarHelper 0.0.5286055 |
+| Verification | Sourcify v2 `exact_match` (`yarn hardhat:verify -- RouterExecutor testnet`), shown as verified on HashScan |
+| Mirror | https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.10833336 |
 
 ## Seeded demo liquidity (`yarn seed:testnet`)
 
 _pending: TKA / TKB token IDs, V1 pair, V2 pool, transaction IDs._
 
-## Split swap (bounty testnet-transaction proof)
+## Routed swap through RouterExecutor (bounty testnet-transaction proof)
 
-_pending: `executeSplit` transaction hash, HashScan link, mirror `/api/v1/contracts/results/<hash>` showing `RouteExecuted` with `planHash`._
+Run with `yarn execute:plan --net testnet --in HBAR --out SAUCE --amount 1` on 3 Oct 2026. The router quoted V1 and V2, V1 won (V2's price on testnet is 25 % worse and no split beat it), and the plan executed through `RouterExecutor.executeSplit` with HBAR as `msg.value`.
+
+| | |
+|---|---|
+| Plan | `ONCHAIN_SPLIT`, 1 leg (SaucerSwap V1 `WHBAR → SAUCE`), 1 HBAR → 54.083577 SAUCE, `totalMinOut` 53.813160 (50 bps) |
+| planHash | `0x08436db04acf51df37aa2e914e3ca5ba404b80732663fc6a0355b88754a94013` |
+| Pre-flight | HIP-719 `associate()` on SAUCE from the deployer account (one transaction) |
+| Transaction | [`0xe9f81b5e98fa4e56e7df317f5106a96d63e52bc00fe4dace37b62703d11dc519`](https://hashscan.io/testnet/transaction/0xe9f81b5e98fa4e56e7df317f5106a96d63e52bc00fe4dace37b62703d11dc519) |
+| Mirror | https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0xe9f81b5e98fa4e56e7df317f5106a96d63e52bc00fe4dace37b62703d11dc519 — `result: SUCCESS`, `RouteExecuted(sender, WHBAR, SAUCE, 100000000, 54083577, planHash)` |
+
+A multi-leg split (direct vs via-WHBAR on the seeded TKA/TKB pairs) is recorded below once Phase 6 seeding is funded.
 
 ## HCS receipts
 
-_pending: topic ID, receipt message sequence number, `/api/v1/topics/<id>/messages/<seq>`, `/receipts/<seq>` verification result._
+| | |
+|---|---|
+| Topic | [0.0.10833350](https://hashscan.io/testnet/topic/0.0.10833350), submit key = operator, memo `hedera-smart-order-router receipts v1` (`yarn topic:create`) |
+| Receipt 1 | sequence 1, consensus `1790982912.235773268`, submit tx `0.0.10833326@1790982906.578418854` — https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10833350/messages/1 |
+| Verification | `verifyReceipt` (same code behind `/api/receipt` and `/receipts/1`): receipt found ✅ · transaction SUCCESS ✅ · `RouteExecuted.planHash` matches ✅ · `totalOut` 54083577 matches ✅ → **verified** |
 
 ## SaucerSwap V3 on testnet (attempt)
 

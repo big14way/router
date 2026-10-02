@@ -1,55 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
-/// Minimal interface for the HTS precompile at 0x167 (create fungible token + mint).
-/// Struct layout matches the official IHederaTokenService for ABI compatibility.
+/// Minimal interface for the Hedera Token Service system contract at 0x167.
+/// Only the association calls the router needs; signatures match the official IHederaTokenService.
+/// https://docs.hedera.com/evm/hedera-services/system-contracts/hts
 interface IHederaTokenService {
-    struct Expiry {
-        int64 second;
-        address autoRenewAccount;
-        int64 autoRenewPeriod;
-    }
+    /// Associates `account` with `token`. 22 = SUCCESS, 23 = TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT.
+    function associateToken(address account, address token) external returns (int64 responseCode);
 
-    struct KeyValue {
-        bool inheritAccountKey;
-        address contractId;
-        bytes ed25519;
-        bytes ECDSA_secp256k1;
-        address delegatableContractId;
-    }
-
-    struct TokenKey {
-        uint256 keyType;
-        KeyValue key;
-    }
-
-    struct HederaToken {
-        string name;
-        string symbol;
-        address treasury;
-        string memo;
-        bool tokenSupplyType;
-        int64 maxSupply;
-        bool freezeDefault;
-        TokenKey[] tokenKeys;
-        Expiry expiry;
-    }
-
-    /// Creates a Fungible Token with the specified properties.
-    /// @return responseCode SUCCESS is 22.
-    /// @return tokenAddress The created token's address.
-    function createFungibleToken(
-        HederaToken memory token,
-        int64 initialTotalSupply,
-        int32 decimals
-    ) external payable returns (int64 responseCode, address tokenAddress);
-
-    /// Mints an amount of the token to the treasury account.
-    /// @param metadata For NFTs only; use empty array for fungible.
-    /// @return responseCode SUCCESS is 22.
-    function mintToken(
-        address token,
-        int64 amount,
-        bytes[] memory metadata
-    ) external returns (int64 responseCode, int64 newTotalSupply, int64[] memory serialNumbers);
+    function associateTokens(address account, address[] memory tokens) external returns (int64 responseCode);
 }

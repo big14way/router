@@ -1,4 +1,6 @@
 import * as dotenv from "dotenv";
+import path from "path";
+dotenv.config({ path: path.join(__dirname, "../../../.env") });
 dotenv.config();
 import { Wallet } from "ethers";
 import password from "@inquirer/password";
@@ -20,6 +22,19 @@ async function main() {
       shell: process.platform === "win32",
     });
 
+    hardhat.on("exit", code => {
+      process.exit(code || 0);
+    });
+    return;
+  }
+
+  if (process.env.DEPLOYER_PRIVATE_KEY) {
+    // Non-interactive path: plain key from .env (never committed; see .env.example).
+    const hardhat = spawn("hardhat", ["deploy", ...process.argv.slice(2)], {
+      stdio: "inherit",
+      env: process.env,
+      shell: process.platform === "win32",
+    });
     hardhat.on("exit", code => {
       process.exit(code || 0);
     });

@@ -1,4 +1,7 @@
 import * as dotenv from "dotenv";
+import path from "path";
+// Root .env (template-wide, generated from template.json envVars) then the package-local one.
+dotenv.config({ path: path.join(__dirname, "../../.env") });
 dotenv.config();
 
 import { HardhatUserConfig, task } from "hardhat/config";
@@ -21,9 +24,12 @@ import generateTsAbis from "./scripts/generateTsAbis";
 // Hedera JSON-RPC URL (testnet default). Set HEDERA_RPC_URL in .env for mainnet.
 const hederaRpcUrl = process.env.HEDERA_RPC_URL || "https://testnet.hashio.io/api";
 
-// Deployer key: run `yarn account:generate` or `yarn account:import`, or set __RUNTIME_DEPLOYER_PRIVATE_KEY at runtime.
+// Deployer key, in order: decrypted at runtime by `yarn deploy` (__RUNTIME_DEPLOYER_PRIVATE_KEY),
+// a plain DEPLOYER_PRIVATE_KEY from .env (CI / non-interactive), else Hardhat's well-known dev key.
 const deployerPrivateKey =
-  process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+  process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY ??
+  process.env.DEPLOYER_PRIVATE_KEY ??
+  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -47,12 +53,18 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      forking: {
-        url: hederaRpcUrl,
-        // @ts-expect-error - custom property for hedera-forking plugin
-        chainId: 296,
-        workerPort: 10001,
-      },
+      // Fork Hedera testnet only when the forking plugin is on (yarn hardhat:chain / hardhat:fork);
+      // plain `hardhat test` runs offline against the mocks.
+      ...(process.env.HEDERA_FORKING === "true"
+        ? {
+            forking: {
+              url: hederaRpcUrl,
+              // @ts-expect-error - custom property for hedera-forking plugin
+              chainId: 296,
+              workerPort: 10001,
+            },
+          }
+        : {}),
     },
     hederaTestnet: {
       url: "https://testnet.hashio.io/api",

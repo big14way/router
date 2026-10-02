@@ -4,6 +4,9 @@ import path from "path";
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   reactStrictMode: true,
+  // The router SDK is consumed from source (workspace), so Next transpiles it.
+  transpilePackages: ["@sh/router-sdk"],
+  serverExternalPackages: ["@hiero-ledger/sdk"],
   devIndicators: false,
   typescript: {
     ignoreBuildErrors: process.env.NEXT_PUBLIC_IGNORE_BUILD_ERROR === "true",
@@ -13,6 +16,8 @@ const nextConfig: NextConfig = {
   },
   webpack: (config, { dev }) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
+    // One viem for the app and the workspace SDK (yarn keeps per-workspace node_modules).
+    config.resolve.alias = { ...config.resolve.alias, viem: path.resolve(__dirname, "node_modules/viem") };
     config.externals.push("pino-pretty", "lokijs", "encoding");
     if (dev) {
       config.watchOptions = {

@@ -4,7 +4,15 @@ import React, { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bars3Icon, BugAntIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowsRightLeftIcon,
+  Bars3Icon,
+  BugAntIcon,
+  DocumentCheckIcon,
+  DocumentTextIcon,
+  ListBulletIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-hbar";
 import { useOutsideClick } from "~~/hooks/scaffold-hbar";
 
@@ -16,8 +24,28 @@ type HeaderMenuLink = {
 
 export const menuLinks: HeaderMenuLink[] = [
   {
-    label: "Home",
+    label: "Quote",
     href: "/",
+  },
+  {
+    label: "Swap",
+    href: "/swap",
+    icon: <ArrowsRightLeftIcon className="h-4 w-4" />,
+  },
+  {
+    label: "Orders",
+    href: "/orders",
+    icon: <ListBulletIcon className="h-4 w-4" />,
+  },
+  {
+    label: "Receipts",
+    href: "/receipts/latest",
+    icon: <DocumentCheckIcon className="h-4 w-4" />,
+  },
+  {
+    label: "Docs",
+    href: "/docs",
+    icon: <DocumentTextIcon className="h-4 w-4" />,
   },
   {
     label: "Debug Contracts",

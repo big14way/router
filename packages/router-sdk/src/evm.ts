@@ -1,4 +1,4 @@
-import { createPublicClient, http, type Hex, type PublicClient } from "viem";
+import { createPublicClient, http, type Address, type Hex, type PublicClient } from "viem";
 import type { NetworkConfig } from "./config";
 import { fetchJson } from "./http";
 
@@ -19,7 +19,7 @@ export type EthCallOptions = { fetchImpl?: typeof fetch; gas?: bigint };
 export async function ethCall(
   cfg: NetworkConfig,
   clients: PublicClient[],
-  to: Hex,
+  to: Address,
   data: Hex,
   opts: EthCallOptions = {},
 ): Promise<Hex> {

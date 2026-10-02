@@ -47,3 +47,29 @@ describe("tokens", () => {
     expect(t.name).toBe("TKA");
   });
 });
+
+describe("configFromEnv extra tokens", () => {
+  it("adds NEXT_PUBLIC_EXTRA_TOKENS entries and rejects malformed ones", async () => {
+    const { configFromEnv } = await import("./config");
+    const c = configFromEnv("testnet", { NEXT_PUBLIC_EXTRA_TOKENS: "TKA:0.0.111:8, TKB:0.0.222:6" });
+    expect(resolveToken(c, "TKA")).toMatchObject({
+      id: "0.0.111",
+      decimals: 8,
+      evm: "0x000000000000000000000000000000000000006F",
+    });
+    expect(resolveToken(c, "tkb").decimals).toBe(6);
+    expect(resolveToken(c, "SAUCE").id).toBe("0.0.1183558");
+    expect(() => configFromEnv("testnet", { NEXT_PUBLIC_EXTRA_TOKENS: "TKA:0.0.1" })).toThrow(/SYM:0.0.id:decimals/);
+    const rpc = configFromEnv("mainnet", {
+      NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL: "http://r",
+      HEDERA_FALLBACK_RPC_URLS: "http://f1,http://f2",
+    });
+    expect(rpc.rpcUrl).toBe("http://r");
+    expect(rpc.fallbackRpcUrls).toEqual([
+      "http://f1",
+      "http://f2",
+      "https://295.rpc.thirdweb.com",
+      "https://mainnet.hashio.io/api",
+    ]);
+  });
+});

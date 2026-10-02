@@ -40,6 +40,8 @@
     "next:start": "yarn workspace @sh/nextjs start",
     "postinstall": "husky",
     "precommit": "lint-staged",
+    "scripts:check-types": "yarn workspace @sh/router-sdk tsc -p ../../scripts/tsconfig.json",
+    "scripts:format": "yarn workspace @sh/router-sdk prettier --write ../../scripts/*.ts ../../scripts/*.mjs",
     "sdk:build": "yarn workspace @sh/router-sdk build",
     "sdk:check-types": "yarn workspace @sh/router-sdk check-types",
     "sdk:format": "yarn workspace @sh/router-sdk format",
@@ -48,6 +50,7 @@
     "sdk:quote": "yarn workspace @sh/router-sdk quote",
     "sdk:test": "yarn workspace @sh/router-sdk test",
     "sdk:test:coverage": "yarn workspace @sh/router-sdk test:coverage",
+    "seed:testnet": "yarn workspace @sh/router-sdk tsx ../../scripts/seed-testnet.ts",
     "test": "yarn sdk:test && yarn hardhat:test",
     "topic:create": "yarn workspace @sh/router-sdk tsx ../../scripts/create-topic.ts"
   },

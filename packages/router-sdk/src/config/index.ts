@@ -1,4 +1,5 @@
-import type { Network } from "../types";
+import type { Network, Token } from "../types";
+import { entityToAddress } from "../units";
 import { mainnet } from "./mainnet";
 import { testnet } from "./testnet";
 import type { NetworkConfig } from "./types";
@@ -22,7 +23,11 @@ export function getConfig(network: Network, overrides: Partial<NetworkConfig> = 
   };
 }
 
-/** Env-driven overrides: `HEDERA_RPC_URL` / `NEXT_PUBLIC_HEDERA_<NET>_RPC_URL` replace the primary relay. */
+/**
+ * Env-driven overrides: `HEDERA_RPC_URL` / `NEXT_PUBLIC_HEDERA_<NET>_RPC_URL` replace the primary relay,
+ * `HEDERA_FALLBACK_RPC_URLS` (comma-separated) prepends fallbacks, and `NEXT_PUBLIC_EXTRA_TOKENS`
+ * (`SYM:0.0.id:decimals,…`, printed by `yarn seed:testnet`) adds HTS tokens to the registry.
+ */
 export function configFromEnv(network: Network, env: Record<string, string | undefined> = process.env): NetworkConfig {
   const key = network === "mainnet" ? "NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL" : "NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL";
   const rpcUrl = env[key] || env.HEDERA_RPC_URL;
@@ -31,9 +36,20 @@ export function configFromEnv(network: Network, env: Record<string, string | und
     .map(s => s.trim())
     .filter(Boolean);
   const base = getConfig(network);
+  const tokens: Record<string, Token> = {};
+  for (const entry of (env.NEXT_PUBLIC_EXTRA_TOKENS ?? "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean)) {
+    const [symbol, id, decimals] = entry.split(":");
+    if (!symbol || !id || !decimals)
+      throw new Error(`NEXT_PUBLIC_EXTRA_TOKENS entry must be SYM:0.0.id:decimals, got "${entry}"`);
+    tokens[symbol] = { id, evm: entityToAddress(id), symbol, name: symbol, decimals: Number(decimals) };
+  }
   return getConfig(network, {
     ...(rpcUrl ? { rpcUrl } : {}),
     fallbackRpcUrls: [...extra, ...base.fallbackRpcUrls, ...(rpcUrl ? [base.rpcUrl] : [])],
+    tokens,
   });
 }
 

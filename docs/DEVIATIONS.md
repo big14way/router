@@ -33,3 +33,7 @@ No co-author trailers are added to commits, at the repository owner's request.
 ## D-7 (2 Oct 2026) — Lambdaplex execution not built
 
 At the repository owner's instruction Phase 8 (Lambdaplex execution: order placement, fills polling, smoke script with `--place`) was skipped. The adapter quotes Lambdaplex (public depth, keyed fee-quote with Signature V1, unit-tested with a frozen vector); `canExecute` reports the venue as quote-only and the planner never selects it for execution. Phase 7 step 8 (a real mainnet V3 market fill) was also skipped: no mainnet funds were used.
+
+## D-8 (2 Oct 2026) — V2 pool creation on testnet is priced out
+
+`SaucerSwapV2Factory.poolCreateFee()` on testnet returns `10000000000000000` tinycent (≈ 1 000 000 USD, ≈ 10 M HBAR at the live rate); `mintFee()` is 0.05 USD and V1 `pairCreateFee()` is 2 USD. BUILD.md Phase 6 asks for a V1 pair *and* a V2 pool with different prices. **What we do:** `scripts/seed-testnet.ts` reads the live fees, creates the V2 pool only when `poolCreateFee + mintFee` is below `--max-fee-hbar` (default 50 HBAR), and otherwise seeds V1 only with three pairs (TKA/TKB direct, TKA/WHBAR, WHBAR/TKB) so the split runs across the direct V1 route and the via-WHBAR V1 route, as the spec's fallback describes. On mainnet, where the fee is sane, the same script creates the V2 pool.

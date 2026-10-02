@@ -7,7 +7,6 @@ import {
   buildPlan,
   configFromEnv,
   createVenues,
-  htsToken,
   parseNetwork,
   quoteAll,
   resolveToken,
@@ -35,21 +34,9 @@ export type QuoteResponse = {
 
 export type SerialToken = { id: string; evm: string; symbol: string; name: string; decimals: number; native?: boolean };
 
-/**
- * Extra HTS tokens (for example the seeded TKA/TKB demo pair) come from
- * `NEXT_PUBLIC_EXTRA_TOKENS="TKA:0.0.123:8,TKB:0.0.456:8"` so nothing is hard-coded.
- */
+/** Network config with env overrides (relays, extra tokens from `yarn seed:testnet`). */
 export function serverConfig(network: Network): NetworkConfig {
-  const cfg = configFromEnv(network);
-  const extra = (process.env.NEXT_PUBLIC_EXTRA_TOKENS ?? "")
-    .split(",")
-    .map(s => s.trim())
-    .filter(Boolean);
-  for (const entry of extra) {
-    const [symbol, id, decimals] = entry.split(":");
-    if (symbol && id && decimals) cfg.tokens[symbol] = htsToken(id, symbol, Number(decimals));
-  }
-  return cfg;
+  return configFromEnv(network);
 }
 
 export function serverVenues(cfg: NetworkConfig): Venue[] {

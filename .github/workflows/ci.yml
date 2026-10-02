@@ -21,9 +21,11 @@ jobs:
       - run: corepack enable
       - run: yarn install --immutable
       - run: yarn lint
+      - run: yarn hardhat:compile
       - run: yarn next:check-types
       - run: yarn hardhat:check-types
       - run: yarn sdk:check-types
+      - run: yarn scripts:check-types
       - run: yarn sdk:test:coverage
       - run: yarn hardhat:test
       - run: yarn next:build

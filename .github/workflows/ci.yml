@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: lint · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn lint
+      - run: yarn next:check-types
+      - run: yarn hardhat:check-types
+      - run: yarn sdk:check-types
+      - run: yarn sdk:test:coverage
+      - run: yarn hardhat:test
+      - run: yarn next:build
+
+  bounty-gate:
+    name: scaffold-hbar gate (local template)
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable
+      - run: node scripts/gate-check.mjs --local
+
+  secrets-scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml

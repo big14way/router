@@ -11,6 +11,8 @@
   },
   "scripts": {
     "format": "yarn next:format && yarn hardhat:format && yarn sdk:format",
+    "gate:check": "node scripts/gate-check.mjs",
+    "gate:check:local": "node scripts/gate-check.mjs --local",
     "hardhat:account": "yarn workspace @sh/hardhat account",
     "hardhat:account:generate": "yarn workspace @sh/hardhat account:generate",
     "hardhat:account:import": "yarn workspace @sh/hardhat account:import",
@@ -56,5 +58,9 @@
   },
   "engines": {
     "node": ">=20.18.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/big14way/router.git"
   }
 }

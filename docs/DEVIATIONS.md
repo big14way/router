@@ -21,3 +21,15 @@ No co-author trailers are added to commits, at the repository owner's request.
 **BUILD.md §3** assumes `QuoterV2.quoteExactInput` works "via eth_call" on both networks.
 **Observed:** on mainnet, Hashio returns `-32000 Error occurred during transaction simulation: Invalid request` and the mirror node `/api/v1/contracts/call` returns `429 Too Many Requests / Invalid request` for every QuoterV2 call (any pool, any size, any gas, after a 60 s cool-down), while plain view calls such as `getPool` succeed on both. Testnet runs the same call fine. A second public relay (`https://295.rpc.thirdweb.com`) runs the simulation and returns the expected output.
 **What we do:** `NetworkConfig.fallbackRpcUrls` lists extra relays; `ethCall` fails over primary → fallbacks → mirror node. Override with `HEDERA_FALLBACK_RPC_URLS` (comma-separated) or replace the primary with `NEXT_PUBLIC_HEDERA_<NET>_RPC_URL`. Production users should run their own relay.
+
+## D-5 (2 Oct 2026) — `template.json` is not copied into scaffolded projects
+
+**BUILD.md Phase 12** lists "check `template.json` … exist" among the gate checks. The CLI (`processTemplateManifest` in create-scaffold-hbar 0.4.1) consumes the manifest to generate `.env.example` and the outro and does not copy it into the new project; the blank template behaves the same. **What we do:** the gate checks `template.json` in the *source* repository and `.env.example` in the scaffolded project.
+
+## D-6 (2 Oct 2026) — Blank-template samples removed
+
+`HederaToken.sol`, `HtsTokenCreator.sol`, their deploy scripts, tests and the `.github/workflows/lint.yaml` (which started a forked chain and deployed on every CI run) were removed. `.gitmodules` referenced Foundry submodules that do not exist in the Hardhat flavour and was removed too. BUILD.md §4 only lists `RouterExecutor.sol`, interfaces and mocks under `packages/hardhat/contracts`.
+
+## D-7 (2 Oct 2026) — Lambdaplex execution not built
+
+At the repository owner's instruction Phase 8 (Lambdaplex execution: order placement, fills polling, smoke script with `--place`) was skipped. The adapter quotes Lambdaplex (public depth, keyed fee-quote with Signature V1, unit-tested with a frozen vector); `canExecute` reports the venue as quote-only and the planner never selects it for execution. Phase 7 step 8 (a real mainnet V3 market fill) was also skipped: no mainnet funds were used.

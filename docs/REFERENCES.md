@@ -141,3 +141,25 @@ Empirical (2 Oct 2026):
 - Lambdaplex `fee-quote` without a key → 401. `exchangeInfo`, `depth`, `time` are open.
 - Testnet pairs with liquidity: V1 WHBAR/SAUCE, WHBAR/USDC, SAUCE/USDC; V2 WHBAR/SAUCE and WHBAR/USDC on the 3000 tier only.
 - Mainnet V2 quoting needs a fallback relay (DEVIATIONS D-4).
+
+## Phase 9 — HCS receipts (read 2 Oct 2026)
+
+- https://docs.hedera.com/native/tutorials/consensus/private-topic.md — `new TopicCreateTransaction().setSubmitKey(operatorKey.publicKey)`; submit with `new TopicMessageSubmitTransaction({topicId, message}).freezeWith(client).sign(operatorKey)` then `execute` / `getReceipt`.
+- https://docs.hedera.com/native/tutorials/consensus/create-first-topic.md — `@hiero-ledger/sdk` is the current package (the `@hashgraph` namespace still works); `Client.forTestnet().setOperator(id, key)`; `PrivateKey.fromStringECDSA` / `fromStringED25519` / `fromStringDer`.
+- Installed SDK `@hiero-ledger/sdk` 2.80.0: `TopicMessageSubmitTransaction.setMaxChunks(n)` (default chunking at 1024 bytes), `TransactionReceipt.topicSequenceNumber`.
+- https://docs.hedera.com/hedera/sdks-and-apis/rest-api + `GET https://testnet.mirrornode.hedera.com/api/v1/docs/openapi.yml`:
+  - `GET /api/v1/topics/{topicId}/messages?limit&order&sequencenumber&timestamp` → `messages[] {consensus_timestamp, message (base64), sequence_number, topic_id, payer_account_id, running_hash, chunk_info {initial_transaction_id, number, total} | null}`, `links.next`.
+  - `GET /api/v1/contracts/results/{transactionIdOrHash}` → `{hash, result, status, logs[] {address, data, topics[], index, bloom, contract_id}, …}`.
+  - `GET /api/v1/transactions/{transactionId}` → `transactions[] {result, transaction_id, consensus_timestamp, transfers[], token_transfers[], entity_id, …}`.
+  - Rate limit: 50 requests/s per IP.
+
+## Phase 10 — app (2 Oct 2026)
+
+- https://docs.hedera.com/solutions/tools/scaffold-hbar/scaffold-ui.md — `@scaffold-hbar-ui/components` (`Address`, `Balance`, `HederaPortalFaucet`, …), hooks `useHederaAccountId`, `useHederaEvmAddress`; the blank template's `hooks/scaffold-hbar` (`useScaffoldReadContract`, `useScaffoldWriteContract`, `useTransactor`, `useTargetNetwork`).
+- Observed: the blank template declares `abitype` `Register.AddressType = string` (`packages/nextjs/types/abitype/abi.d.ts`), so `Address` is `string` inside the app; the SDK's `ethCall` therefore takes `Address` rather than `Hex`.
+
+## Phase 12 — gate (2 Oct 2026)
+
+- https://github.com/hedera-dev/create-scaffold-hbar `src/tasks/copy-template-files.ts` — `CREATE_SCAFFOLD_HBAR_TEMPLATE_DIR` copies a local tree (skips `.git`, `node_modules`, build output, `.env`) instead of downloading; `processTemplateManifest` then writes `.env.example` from `envVars` and removes `template.json` from the project (DEVIATIONS D-5).
+- https://hedera.com/blog/scaffold-hbar-template-bounty/ — gate: scaffolds via `npm create scaffold-hbar@latest -- --template owner/repo`, valid `template.json`, README + AGENTS, install/lint/build clean, core routes OK, Hedera service with testnet proof, no secrets, MIT.
+- `gitleaks/gitleaks-action@v2` with `GITLEAKS_CONFIG` for the allow-list.

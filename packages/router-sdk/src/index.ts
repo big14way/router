@@ -6,3 +6,4 @@ export * from "./http";
 export * from "./evm";
 export * from "./venues";
 export * from "./lambdaplex/auth";
+export * from "./router";

@@ -1,9 +1,9 @@
 import { configFromEnv, parseNetwork } from "../config";
 import { resolveToken } from "../tokens";
-import type { Quote, VenueReport } from "../types";
 import { formatUnits, parseUnits } from "../units";
 import { createVenues, quoteAll } from "../venues";
 import { parseArgs, str } from "./args";
+import { renderReport } from "./render";
 
 /**
  * yarn sdk:quote --net testnet --in WHBAR --out SAUCE --amount 10
@@ -36,29 +36,6 @@ async function main() {
     );
   if (args.json) console.log(JSON.stringify(reports, (_, v) => (typeof v === "bigint" ? v.toString() : v), 2));
 }
-
-export function renderReport(r: VenueReport, decimals: number): string {
-  const head = `${r.venue.padEnd(11)} ${r.status.ok ? "executable" : `unavailable: ${r.status.reason}`}  (${r.latencyMs} ms)`;
-  if (!r.quotes.length) return head;
-  return [head, ...r.quotes.map(q => `  ${renderQuote(q, decimals)}`)].join("\n");
-}
-
-export function renderQuote(q: Quote, decimals: number): string {
-  const route =
-    q.venue === "SAUCER_V1"
-      ? `path ${(q.path as string[]).map(short).join(" → ")}`
-      : q.venue === "SAUCER_V2"
-        ? `fees ${q.fees?.join("/")}`
-        : q.venue === "SAUCER_V3"
-          ? `book ${q.bookId} ${q.side}`
-          : `${q.symbol} ${q.side}`;
-  const flags = `${q.fillable ? "fillable" : "NOT fillable"}${q.minNotionalOk ? "" : ", below minNotional"}`;
-  const gas = q.gasEstimate ? `, gas ${q.gasEstimate}` : "";
-  const fee = q.feeOut ? `, fee ${formatUnits(q.feeOut, decimals)}` : "";
-  return `${route.padEnd(28)} out ${formatUnits(q.amountOut, decimals)}  [${flags}${gas}${fee}]`;
-}
-
-const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 main().catch(e => {
   console.error(e);

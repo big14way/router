@@ -40,6 +40,8 @@ jobs:
         with:
           node-version: 20
       - run: corepack enable
+      # create-scaffold-hbar makes an initial commit in the new project and refuses to run without a git identity.
+      - run: git config --global user.name "ci-gate" && git config --global user.email "ci-gate@users.noreply.github.com"
       - run: node scripts/gate-check.mjs --local
 
   secrets-scan:

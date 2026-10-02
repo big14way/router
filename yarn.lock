@@ -3640,6 +3640,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": ~8.27.0
     "@typescript-eslint/parser": ~8.27.0
     "@vitest/coverage-v8": ^5.0.3
+    dotenv: ~16.4.5
     eslint: ~9.23.0
     eslint-config-prettier: ~10.1.1
     eslint-plugin-prettier: ~5.2.4

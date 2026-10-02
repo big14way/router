@@ -46,7 +46,8 @@
     "sdk:quote": "yarn workspace @sh/router-sdk quote",
     "sdk:test": "yarn workspace @sh/router-sdk test",
     "sdk:test:coverage": "yarn workspace @sh/router-sdk test:coverage",
-    "test": "yarn sdk:test && yarn hardhat:test"
+    "test": "yarn sdk:test && yarn hardhat:test",
+    "topic:create": "yarn workspace @sh/router-sdk tsx ../../scripts/create-topic.ts"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {

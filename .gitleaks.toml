@@ -1,0 +1,14 @@
+# Secrets scan configuration (run locally before every commit and in CI).
+title = "hedera-smart-order-router"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Vendored tooling and generated artifacts that trip generic rules"
+paths = [
+  '''\.yarn/releases/.*\.cjs$''',
+  '''\.yarn/plugins/.*\.cjs$''',
+  '''yarn\.lock$''',
+  '''package-lock\.json$''',
+]

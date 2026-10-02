@@ -1,0 +1,42 @@
+{
+  "name": "@sh/router-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hedera smart order router: venue adapters, ranker, splitter, planner, executors, HCS receipts.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check-types": "tsc --noEmit",
+    "format": "prettier --write './**/*.ts'",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "quote": "tsx src/cli/quote.ts",
+    "plan": "tsx src/cli/plan.ts"
+  },
+  "dependencies": {
+    "@hiero-ledger/sdk": "^2.80.0",
+    "viem": "2.39.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@types/node": "^20.17.0",
+    "@typescript-eslint/eslint-plugin": "~8.27.0",
+    "@typescript-eslint/parser": "~8.27.0",
+    "@vitest/coverage-v8": "^5.0.3",
+    "eslint": "~9.23.0",
+    "eslint-config-prettier": "~10.1.1",
+    "eslint-plugin-prettier": "~5.2.4",
+    "globals": "^17.13.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.8.2",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}

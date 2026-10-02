@@ -23,3 +23,15 @@ node_modules
 dist
 
 .env
+
+# env (only .env.example is tracked)
+.env*
+!.env.example
+
+# build / test output
+coverage
+packages/router-sdk/dist
+.harness/runs
+.harness/cache
+.harness/runtime
+.skill-cache

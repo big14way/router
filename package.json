@@ -1,15 +1,16 @@
 {
-  "name": "sh",
+  "name": "hedera-smart-order-router",
   "version": "0.0.1",
   "private": true,
   "workspaces": {
     "packages": [
       "packages/hardhat",
-      "packages/nextjs"
+      "packages/nextjs",
+      "packages/router-sdk"
     ]
   },
   "scripts": {
-    "format": "yarn next:format && yarn hardhat:format",
+    "format": "yarn next:format && yarn hardhat:format && yarn sdk:format",
     "hardhat:account": "yarn workspace @sh/hardhat account",
     "hardhat:account:generate": "yarn workspace @sh/hardhat account:generate",
     "hardhat:account:import": "yarn workspace @sh/hardhat account:import",
@@ -26,7 +27,8 @@
     "hardhat:lint-staged": "yarn workspace @sh/hardhat lint-staged",
     "hardhat:test": "yarn workspace @sh/hardhat test",
     "hardhat:verify": "yarn workspace @sh/hardhat verify:contract",
-    "lint": "yarn next:lint && yarn hardhat:lint",
+    "lint": "yarn next:lint && yarn hardhat:lint && yarn sdk:lint",
+    "lint-staged": "lint-staged",
     "next:build": "yarn workspace @sh/nextjs build",
     "next:check-types": "yarn workspace @sh/nextjs check-types",
     "next:dev": "yarn workspace @sh/nextjs dev",
@@ -36,7 +38,15 @@
     "next:start": "yarn workspace @sh/nextjs start",
     "postinstall": "husky",
     "precommit": "lint-staged",
-    "lint-staged": "lint-staged"
+    "sdk:build": "yarn workspace @sh/router-sdk build",
+    "sdk:check-types": "yarn workspace @sh/router-sdk check-types",
+    "sdk:format": "yarn workspace @sh/router-sdk format",
+    "sdk:lint": "yarn workspace @sh/router-sdk lint",
+    "sdk:plan": "yarn workspace @sh/router-sdk plan",
+    "sdk:quote": "yarn workspace @sh/router-sdk quote",
+    "sdk:test": "yarn workspace @sh/router-sdk test",
+    "sdk:test:coverage": "yarn workspace @sh/router-sdk test:coverage",
+    "test": "yarn sdk:test && yarn hardhat:test"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {

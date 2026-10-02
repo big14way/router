@@ -115,3 +115,29 @@ Empirical unit check: `eth_getBalance` for 0.0.19264 on Hashio = 55 × 10^18 wei
 - V3 mainnet `GET /books`: 5 books `OPEN`, unhalted, `isAMMEnabled:1`: 1 HBAR/USDC, 2 SAUCE/USDC, 3 WBTC/USDC, 4 WETH/USDC, 5 USDT0/USDC; `minNotional` 15000000 (15 USDC); taker 1200 pips (0.12%) except USDT0 600; maker 0.
 - `GET /signature/domain` is public on both: testnet reactor `0x5707B946EE64bD750A587261Ce36ec7024F3088B` (chain 296), mainnet `0xa2c2713E82B47DCB3B0bae75199C81fcd185b86C` (chain 295), name `PartialFillLimitOrderReactor` v1. Never hardcoded; fetched at runtime.
 - Lambdaplex `GET /api/v1/exchangeInfo`, `/depth`, `/time` answer without an API key. 13 symbols `TRADING` including HBAR-USDC, SAUCE-USDC, WETH-USDC, WBTC-USDC. `MIN_NOTIONAL` 5 USDC.
+
+## Phase 3 — venue quoting (read 2 Oct 2026)
+
+Sources:
+
+- https://docs.saucerswap.finance/developers/v1/swap/swap-quote.md — `getAmountsOut(uint amountIn, address[] path)` read-only via JSON-RPC or mirror `/contracts/call`; HBAR legs use the WHBAR token address; last element of `amounts` is the output.
+- https://docs.saucerswap.finance/developers/v1/liquidity/check-if-a-pool-exists.md — `factory.getPair(a,b)` returns the zero address when missing.
+- https://docs.saucerswap.finance/developers/v2/swap/swap-quote.md — `QuoterV2.quoteExactInput(bytes path, uint256 amountIn)` returns `(amountOut, sqrtPriceX96AfterList, initializedTicksCrossedList, gasEstimate)`; path is `[token20][fee3][token20]…`, e.g. `0001F4` = 500.
+- https://docs.saucerswap.finance/developers/v2/liquidity/check-if-a-pool-exists.md — `factory.getPool(a,b,fee)`; fee in hundredths of a bip; zero address when missing.
+- https://docs.saucerswap.finance/api-reference/orderbook/overview.md — public: `/books`, `/depth/:id`, `/trades/:id`, quotes, `/signature/domain`; JWT: `/fees/:id`, `/onboarding/:id/status`, `/orders*`, `/ws/*`, cancel.
+- https://docs.saucerswap.finance/api-reference/orderbook/market-data.md — `GET /books/:id/quote/exact-input?inputToken=<evm>&inputAmount=<raw>` → `{outputToken, snappedInputAmount, consumedInputAmount, expectedOutputAmount, suggestedOutputAmount, slippageBps, fillable}`; fees in pips (1 pip = 1e-6, 100 pips = 1 bp); all amounts raw integers as strings.
+- https://docs.saucerswap.finance/api-reference/orderbook/limits-and-errors.md — `{ "error": "message" }`; 401 → re-authenticate; 429 → back off; max 250 orders per build/save, 500 per cancel, deadline 30 s – 90 d.
+- https://lambdaplex-labs.gitbook.io/lambdaplex/for-developers/api/exchange-info.md — `GET /api/v1/exchangeInfo` (no auth, weight 20): symbols with `PRICE_FILTER`, `LOT_SIZE`, `MIN_NOTIONAL`, `DUST_ORDER_POLICY`, `status` TRADING|CANCEL_ONLY|PAUSED. `GET /api/v1/time`.
+- https://lambdaplex-labs.gitbook.io/lambdaplex/for-developers/api/order-books.md — `GET /api/v1/depth?symbol&limit` (no auth): `bids`/`asks` as `[price, qty]` strings.
+- https://lambdaplex-labs.gitbook.io/lambdaplex/for-developers/api/orders.md — `GET /api/v1/order/fee-quote` (signed) → `vwap`, `slippage`, `feePreview{estimatedAppliedTakerBps, estimatedTakerFee, estimatedNetReceived}`, `regime`; `POST /api/v1/order`, `DELETE /api/v1/order`; Signature V1 over the query string incl. `timestamp`.
+- https://lambdaplex-labs.gitbook.io/lambdaplex/for-developers/api/limits.md — headers `X-PLEX-USED-WEIGHT-IP|API`, `X-PLEX-ORDER-COUNT`; 429 with whole-second `Retry-After` and code `-1015`.
+- https://lambdaplex-labs.gitbook.io/lambdaplex/for-developers/api/account.md — `GET /api/v1/account` → `commissionRates{maker,taker}`, balances; `/account/commission` per symbol. Signed.
+- Hummingbot `hummingbot/connector/exchange/lambdaplex/lambdaplex_auth.py` (reference Signature V1): params in insertion order, then `recvWindow`, then `timestamp`; payload `k=v&k=v`; Ed25519 signature base64 as `signature` param; `X-API-KEY` header. `lambdaplex_utils.py` default fees: maker 0.12 %, taker 0.25 %. `RECEIVE_WINDOW = 5000`.
+
+Empirical (2 Oct 2026):
+
+- V3 quote endpoints need the **EVM address** as `inputToken` (`0.0.x` → `400 inputToken ... does not match orderbook pair`); native HBAR is `0x000…000`.
+- Mainnet book 1, 100 HBAR → expected `9950000` USDC with best bid `0.0995`: `expectedOutputAmount` is gross, so the taker fee (`takerFeePips` from `/books`) is deducted by the adapter.
+- Lambdaplex `fee-quote` without a key → 401. `exchangeInfo`, `depth`, `time` are open.
+- Testnet pairs with liquidity: V1 WHBAR/SAUCE, WHBAR/USDC, SAUCE/USDC; V2 WHBAR/SAUCE and WHBAR/USDC on the 3000 tier only.
+- Mainnet V2 quoting needs a fallback relay (DEVIATIONS D-4).

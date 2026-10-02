@@ -16,6 +16,9 @@ export type NetworkConfig = {
   network: Network;
   chainId: 295 | 296;
   rpcUrl: string;
+  /** Extra JSON-RPC relays tried in order when the primary fails a read (public relays are rate limited and
+   *  the mirror-node-backed ones reject heavy simulations such as QuoterV2 on mainnet). */
+  fallbackRpcUrls: string[];
   mirrorUrl: string;
   hashscanUrl: string;
   v3ApiUrl: string;

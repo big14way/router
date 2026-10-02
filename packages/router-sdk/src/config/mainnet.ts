@@ -10,6 +10,8 @@ export const mainnet: NetworkConfig = {
   network: "mainnet",
   chainId: 295,
   rpcUrl: "https://mainnet.hashio.io/api",
+  // Hashio/mirror node reject QuoterV2 simulations on mainnet (429 "Invalid request", 2 Oct 2026); thirdweb runs them.
+  fallbackRpcUrls: ["https://295.rpc.thirdweb.com"],
   mirrorUrl: "https://mainnet.mirrornode.hedera.com",
   hashscanUrl: "https://hashscan.io/mainnet",
   v3ApiUrl: "https://orderbook-api.saucerswap.finance",

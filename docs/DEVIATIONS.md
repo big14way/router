@@ -15,3 +15,9 @@ The blank template ships `LICENCE`. BUILD.md §4 and the bounty gate expect `LIC
 ## D-3 (2 Oct 2026) — Commit attribution
 
 No co-author trailers are added to commits, at the repository owner's request.
+
+## D-4 (2 Oct 2026) — Mainnet QuoterV2 simulation rejected by Hashio / mirror node
+
+**BUILD.md §3** assumes `QuoterV2.quoteExactInput` works "via eth_call" on both networks.
+**Observed:** on mainnet, Hashio returns `-32000 Error occurred during transaction simulation: Invalid request` and the mirror node `/api/v1/contracts/call` returns `429 Too Many Requests / Invalid request` for every QuoterV2 call (any pool, any size, any gas, after a 60 s cool-down), while plain view calls such as `getPool` succeed on both. Testnet runs the same call fine. A second public relay (`https://295.rpc.thirdweb.com`) runs the simulation and returns the expected output.
+**What we do:** `NetworkConfig.fallbackRpcUrls` lists extra relays; `ethCall` fails over primary → fallbacks → mirror node. Override with `HEDERA_FALLBACK_RPC_URLS` (comma-separated) or replace the primary with `NEXT_PUBLIC_HEDERA_<NET>_RPC_URL`. Production users should run their own relay.

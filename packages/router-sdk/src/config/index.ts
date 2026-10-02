@@ -22,6 +22,21 @@ export function getConfig(network: Network, overrides: Partial<NetworkConfig> = 
   };
 }
 
+/** Env-driven overrides: `HEDERA_RPC_URL` / `NEXT_PUBLIC_HEDERA_<NET>_RPC_URL` replace the primary relay. */
+export function configFromEnv(network: Network, env: Record<string, string | undefined> = process.env): NetworkConfig {
+  const key = network === "mainnet" ? "NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL" : "NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL";
+  const rpcUrl = env[key] || env.HEDERA_RPC_URL;
+  const extra = (env.HEDERA_FALLBACK_RPC_URLS ?? "")
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+  const base = getConfig(network);
+  return getConfig(network, {
+    ...(rpcUrl ? { rpcUrl } : {}),
+    fallbackRpcUrls: [...extra, ...base.fallbackRpcUrls, ...(rpcUrl ? [base.rpcUrl] : [])],
+  });
+}
+
 export function parseNetwork(value: string | undefined): Network {
   if (value === "mainnet" || value === "testnet") return value;
   if (value === undefined || value === "") return "testnet";

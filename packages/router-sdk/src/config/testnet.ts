@@ -10,6 +10,7 @@ export const testnet: NetworkConfig = {
   network: "testnet",
   chainId: 296,
   rpcUrl: "https://testnet.hashio.io/api",
+  fallbackRpcUrls: ["https://296.rpc.thirdweb.com"],
   mirrorUrl: "https://testnet.mirrornode.hedera.com",
   hashscanUrl: "https://hashscan.io/testnet",
   v3ApiUrl: "https://testnet-orderbook-api.saucerswap.finance",

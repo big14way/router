@@ -18,14 +18,6 @@ export const v2QuoterAbi = parseAbi([
   "function quoteExactInput(bytes path, uint256 amountIn) returns (uint256 amountOut, uint160[] sqrtPriceX96AfterList, uint32[] initializedTicksCrossedList, uint256 gasEstimate)",
 ]);
 
-export const v2SwapRouterAbi = parseAbi([
-  "struct ExactInputParams { bytes path; address recipient; uint256 deadline; uint256 amountIn; uint256 amountOutMinimum; }",
-  "function exactInput(ExactInputParams params) payable returns (uint256 amountOut)",
-  "function multicall(bytes[] data) payable returns (bytes[] results)",
-  "function refundETH() payable",
-  "function unwrapWHBAR(uint256 amountMinimum, address recipient) payable",
-]);
-
 export const erc20Abi = parseAbi([
   "function balanceOf(address) view returns (uint256)",
   "function allowance(address owner, address spender) view returns (uint256)",

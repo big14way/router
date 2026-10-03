@@ -2,7 +2,7 @@
 
 ## One sentence
 
-`quoteAll` asks every venue adapter for an executable price, `rankQuotes` applies the venue rules, `splitAcrossAmms` grid-searches a V1/V2 split, `buildPlan` emits an `ExecutionPlan` with a `planHash`, one executor per plan kind runs it, `publishReceipt` writes what happened to HCS, and `verifyReceipt` proves it from the mirror node.
+`quoteAll` asks every venue adapter for an executable price, `rankQuotes` applies the venue rules, `splitAcrossAmms` grid-searches a V1/V2 split, `buildPlan` emits an `ExecutionPlan` with a `planHash` (Lambdaplex is ranked for comparison but never planned, D-7), one executor per plan kind runs it, `publishReceipt` writes what happened to HCS, and `verifyReceipt` proves it from the mirror node.
 
 ## Data flow
 
@@ -22,8 +22,7 @@ router/split.ts  top ≤3 V1/V2 routes, 5 % grid (10 % for three), exact re-quot
 router/plan.ts   ExecutionPlan {kind, legs | order, totalOut, totalMinOut, planHash, alternatives}
         │
         ├─ ONCHAIN_SPLIT ──▶ RouterExecutor.executeSplit(...)  (atomic; emits RouteExecuted(..., planHash))
-        ├─ V3_MARKET ──────▶ v3/orders.ts quote → build → sign (0x00|0x01) → save → user-events
-        └─ LAMBDAPLEX_MARKET ▶ lambdaplex/orders.ts (keyed; not enabled in this build)
+        └─ V3_MARKET ──────▶ v3/orders.ts quote → build → sign (0x00|0x01) → save → user-events
         │
         ▼
 receipts/hcs.ts  Receipt v1 → TopicMessageSubmitTransaction (chunked)

@@ -23,5 +23,4 @@ export const VENUE_LABEL: Record<string, string> = {
 export const KIND_LABEL: Record<string, string> = {
   ONCHAIN_SPLIT: "On-chain (RouterExecutor)",
   V3_MARKET: "SaucerSwap V3 market order",
-  LAMBDAPLEX_MARKET: "Lambdaplex market order",
 };

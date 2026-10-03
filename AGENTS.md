@@ -12,7 +12,7 @@ packages/router-sdk/src      the router (ESM TypeScript, vitest)
   config/{testnet,mainnet}    verified addresses + API hosts; tokens.ts resolves symbols/ids
   venues/                     Venue interface + SaucerV1/V2/V3 + Lambdaplex adapters (quote + canExecute)
   router/{rank,split,plan}    ranking rules, grid-search split, ExecutionPlan + planHash
-  execute/                    executors per plan kind (on-chain, V3 signed orders, Lambdaplex)
+  execute/                    executors per plan kind (on-chain split, V3 signed order)
   v3/ lambdaplex/             auth, onboarding, orders, ws, signing for the off-chain venues
   receipts/{hcs,verify}       HCS publish + mirror-node verification
   cli/{quote,plan}            yarn sdk:quote / yarn sdk:plan

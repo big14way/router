@@ -44,8 +44,7 @@ export const ExecutePanel = ({ quote, flags }: Props) => {
     );
   }
   if (plan.kind === "ONCHAIN_SPLIT") return <OnchainExecute quote={quote} plan={plan} flags={flags} />;
-  if (plan.kind === "V3_MARKET") return <V3Panel plan={plan} flags={flags} />;
-  return <LambdaplexExecute plan={plan} flags={flags} />;
+  return <V3Panel plan={plan} flags={flags} />;
 };
 
 const OnchainExecute = ({
@@ -299,18 +298,3 @@ const whbarAddress = (quote: QuoteResponse): string => {
   if (v2 && typeof v2.path === "string") return quote.tokenIn.native ? v2.path.slice(0, 42) : `0x${v2.path.slice(-40)}`;
   throw new Error("no AMM route to derive the WHBAR address from");
 };
-
-const LambdaplexExecute = ({ plan, flags }: { plan: ExecutionPlan; flags: AppFlags | null }) => (
-  <div className="flex flex-col gap-3">
-    <h3 className="font-semibold m-0">{KIND_LABEL[plan.kind]}</h3>
-    <p className="text-sm m-0">
-      {plan.order?.symbol} · {plan.order?.side} · {fmtUnits(plan.amountIn, plan.tokenIn.decimals)} {plan.tokenIn.symbol}{" "}
-      → {fmtUnits(plan.totalOut, plan.tokenOut.decimals)} {plan.tokenOut.symbol}
-    </p>
-    <div className="alert alert-info text-sm">
-      {flags?.lambdaplexKeyed
-        ? "Lambdaplex is keyed on the server, but order placement is not enabled in this build; the adapter quotes only."
-        : "Lambdaplex execution is keyed: set LAMBDAPLEX_API_KEY and LAMBDAPLEX_ED25519_SEED on the server. This build quotes Lambdaplex only."}
-    </div>
-  </div>
-);

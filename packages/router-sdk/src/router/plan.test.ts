@@ -88,7 +88,7 @@ describe("buildPlan", () => {
     expect(noReq.split).toBeUndefined();
   });
 
-  it("emits V3_MARKET / LAMBDAPLEX_MARKET plans for off-chain winners", async () => {
+  it("emits a V3_MARKET plan when the book wins and refuses off-chain venues without an executor", async () => {
     const v3: Quote = {
       venue: "SAUCER_V3",
       bookId: "2",
@@ -124,15 +124,9 @@ describe("buildPlan", () => {
       minNotionalOk: true,
       fetchedAt: 0,
     };
-    const lpPlan = await buildPlan({
-      cfg,
-      tokenIn: HBAR,
-      tokenOut: SAUCE,
-      amountIn,
-      reports: [rep("LAMBDAPLEX", [lp])],
-    });
-    expect(lpPlan.plan.kind).toBe("LAMBDAPLEX_MARKET");
-    expect(lpPlan.plan.planHash).not.toBe(plan.planHash);
+    await expect(
+      buildPlan({ cfg, tokenIn: HBAR, tokenOut: SAUCE, amountIn, reports: [rep("LAMBDAPLEX", [lp])] }),
+    ).rejects.toThrow("no executor for LAMBDAPLEX plans in this build");
   });
 
   it("throws NoRouteError with reasons when nothing is executable", async () => {

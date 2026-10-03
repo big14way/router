@@ -17,7 +17,6 @@ export async function GET(req: Request) {
       receiptsTopic: process.env.NEXT_PUBLIC_RECEIPTS_TOPIC_ID ?? null,
       mainnetExecution: ALLOW_MAINNET,
       v3Bot: Boolean(process.env.V3_BOT_ACCOUNT_ID && process.env.V3_BOT_PRIVATE_KEY),
-      lambdaplexKeyed: Boolean(process.env.LAMBDAPLEX_API_KEY && process.env.LAMBDAPLEX_ED25519_SEED),
     });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 400 });

@@ -1,70 +1,39 @@
-# Hardhat package (Hedera)
+# Hardhat package
 
-Hardhat config, contracts, deploy scripts, tests, and Hashscan verification for this monorepo.
-
-## Local development
-
-From the repo root, use the explicit `hardhat:*` scripts for this package. Inside `packages/hardhat`, use the unprefixed package-local scripts.
-
-1. **Start the local chain** (terminal 1, from repo root):
-   ```bash
-   yarn hardhat:chain
-   ```
-   This starts `hardhat node` with **Hedera testnet forking** (`HEDERA_FORKING=true` and `@hashgraph/system-contracts-forking`). JSON-RPC is served at **http://127.0.0.1:8545**.
-
-2. **Deploy to the running fork** (terminal 2):
-   ```bash
-   yarn hardhat:deploy --network localhost
-   ```
-   Use **`localhost`** so Hardhat connects to the long-running node on port 8545.
-
-   **`yarn hardhat:deploy` without `--network localhost`** uses the default network `hardhat`, which is the **in-process ephemeral** Hardhat network—**not** the same process as `yarn hardhat:chain`. For deploys against the forked node you started in step 1, always pass **`--network localhost`** while that node is running.
-
-3. **Run contract tests** (from repo root; tests use `HEDERA_FORKING=true` and can run against the fork or standalone):
-   ```bash
-   yarn hardhat:test
-   ```
-
-## Deploy and verify on Hedera testnet/mainnet
-
-You need a deployer account with HBAR on the target network. Without funds, deploy and verify will fail with "Sender account not found".
-
-1. **Generate or import an account** (from the repo root):
-   ```bash
-   yarn hardhat:account:generate
-   ```
-   or
-   ```bash
-   yarn hardhat:account:import
-   ```
-   The encrypted key is stored in `packages/hardhat/.env`.
-
-2. **Fund the account on testnet:**  
-   Use the [Hedera Portal faucet](https://portal.hedera.com/faucet) to receive testnet HBAR.
-
-3. **Deploy to Hedera testnet** (from repo root):
-   ```bash
-   yarn hardhat:deploy --network hederaTestnet
-   ```
-   or
-   ```bash
-   yarn hardhat:deploy --network hedera_testnet
-   ```
-   You will be prompted to enter the password to decrypt your deployer key.
-
-4. **Verify on Sourcify** (shows as verified on HashScan). Uses the solc standard-json from `artifacts/build-info` and submits directly to the Sourcify API v2 — `@nomicfoundation/hardhat-verify` is not used because its Hardhat 2-compatible line only speaks the removed Sourcify API v1:
-   ```bash
-   yarn hardhat:verify -- HederaToken testnet                          # address from deployments/hederaTestnet/
-   yarn hardhat:verify -- HederaToken testnet 0xYourContractAddress    # explicit address
-   ```
-   Use `mainnet` instead of `testnet` for chain 295.
+`RouterExecutor.sol`, the only contract in this template: it runs a router plan's V1/V2 legs in one transaction, checks each leg's `minOut` and the plan's `totalMinOut`, associates itself with HTS tokens through the `0x167` system contract, and emits `RouteExecuted(…, planHash)` for the HCS receipt to point at.
 
 ## Layout
 
-- `contracts/` — Solidity sources
-- `deploy/` — hardhat-deploy scripts (e.g. `00_deploy_hedera_token.ts`)
-- `scripts/` — generateAccount, importAccount, verifySourcify.ts, etc.
-- `test/` — contract tests
-- `hardhat.config.ts` — networks (`hardhat`, `localhost` for RPC at 127.0.0.1:8545, `hederaTestnet`, `hederaMainnet`)
+- `contracts/RouterExecutor.sol` — the executor; `contracts/interfaces/` — SaucerSwap and HTS interfaces it calls
+- `contracts/mocks/` — mock routers, ERC-20 and HTS used by the offline tests
+- `test/RouterExecutor.test.ts` — 11 tests against the mocks (no network, no keys)
+- `deploy/00_deploy_executor.ts` — deploys `RouterExecutor` with the SaucerSwap V1 router, V2 swap router, WHBAR token and WHBAR helper of the target network (chain 295 uses mainnet addresses, anything else testnet)
+- `scripts/` — account generation/import, the deploy wrapper and `verifySourcify.ts`
+- `hardhat.config.ts` — networks `hardhat` (offline, or a forked Hedera testnet when `HEDERA_FORKING=true`), `localhost`, `hederaTestnet`, `hederaMainnet`
 
-Network and RPC URLs are in `hardhat.config.ts`. Deployer key is read from `.env` (encrypted) and decrypted at deploy time for live networks.
+## Test
+
+From the repo root:
+
+```bash
+yarn hardhat:test       # offline against the mocks, with a gas report
+```
+
+## Deploy and verify
+
+1. **Deployer key.** Put a funded ECDSA key in the root `.env` as `DEPLOYER_PRIVATE_KEY` (non-interactive), or run `yarn hardhat:account:generate` / `yarn hardhat:account:import` to store an encrypted key that `yarn hardhat:deploy` asks the password for. Fund the EVM address at the [Hedera Portal faucet](https://portal.hedera.com/faucet).
+2. **Deploy.**
+   ```bash
+   yarn hardhat:deploy --network hederaTestnet    # or hederaMainnet
+   ```
+   It prints the HashScan link and `NEXT_PUBLIC_ROUTER_EXECUTOR=0x…` for the root `.env`.
+3. **Verify on Sourcify** (shows as verified on HashScan). The script submits the solc standard JSON from `artifacts/build-info` to the Sourcify v2 API:
+   ```bash
+   yarn hardhat:verify -- RouterExecutor testnet               # address from deployments/hederaTestnet/
+   yarn hardhat:verify -- RouterExecutor testnet 0xAddress     # explicit address
+   ```
+   Use `mainnet` for chain 295.
+
+## Local fork (optional)
+
+`yarn hardhat:chain` starts `hardhat node` forking Hedera testnet with the HTS system-contract emulation (`@hashgraph/system-contracts-forking`), served at http://127.0.0.1:8545. Deploy to it from a second terminal with `yarn hardhat:deploy --network localhost`; the deploy script wires it to the testnet SaucerSwap addresses.

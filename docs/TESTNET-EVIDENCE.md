@@ -87,7 +87,7 @@ The same TKA → TKB plan executed from the Scaffold-HBAR app with an in-browser
 | Receipt 1 | sequence 1, consensus `1790982912.235773268`, submit tx `0.0.10833326@1790982906.578418854` — https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10833350/messages/1 |
 | Verification | `verifyReceipt` (same code behind `/api/receipt` and `/receipts/1`): receipt found ✅ · transaction SUCCESS ✅ · `RouteExecuted.planHash` matches ✅ · `totalOut` 54083577 matches ✅ → **verified** |
 
-## SaucerSwap V3 on testnet (attempt)
+## SaucerSwap V3 on testnet: onboarding and the halted book (2–3 Oct 2026)
 
 Checked 2 Oct 2026 via `GET https://testnet-orderbook-api.saucerswap.finance/books`:
 

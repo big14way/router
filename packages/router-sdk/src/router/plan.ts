@@ -90,7 +90,9 @@ export async function buildPlan(input: PlanInput): Promise<PlanOutcome> {
     return { plan, ranking, split };
   }
 
-  const kind = best.venue === "SAUCER_V3" ? "V3_MARKET" : "LAMBDAPLEX_MARKET";
+  // The V3 book is the only off-chain venue with an executor; Lambdaplex reports quote-only (D-7).
+  if (best.venue !== "SAUCER_V3") throw new Error(`no executor for ${best.venue} plans in this build`);
+  const kind = "V3_MARKET";
   const totalMinOut = minusBps(best.amountOut, slippageBps);
   const plan: ExecutionPlan = {
     ...base,
@@ -106,7 +108,7 @@ export async function buildPlan(input: PlanInput): Promise<PlanOutcome> {
       tokenOut: tokenOut.id,
       amountIn: best.amountIn,
       totalMinOut,
-      route: best.bookId ?? best.symbol,
+      route: best.bookId,
       side: best.side,
       createdAt,
     }),

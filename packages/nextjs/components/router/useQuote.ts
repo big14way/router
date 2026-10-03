@@ -12,7 +12,6 @@ export type AppFlags = {
   receiptsTopic: string | null;
   mainnetExecution: boolean;
   v3Bot: boolean;
-  lambdaplexKeyed: boolean;
 };
 
 export function useTokens(net: Net) {

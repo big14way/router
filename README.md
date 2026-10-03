@@ -1,8 +1,8 @@
 # Hedera Smart Order Router
 
-**Quote SaucerSwap V1, V2, the V3 order book and Lambdaplex, split across V1/V2 pools, execute on whichever venue (or split) gives the best output, publish a best-execution receipt to HCS, and verify it from the mirror node.** A Scaffold-HBAR template.
+**Quote SaucerSwap V1, V2, the V3 order book and Lambdaplex, split across V1/V2 pools, execute the best executable route (an atomic AMM split or a V3 market order), publish a best-execution receipt to HCS, and verify it from the mirror node.** A Scaffold-HBAR template.
 
-SaucerSwap's own router ["is part of the SaucerSwap app and is not exposed as a public API"](https://docs.saucerswap.finance/protocol/routing), so every integrator has to quote each venue by hand and usually picks one. This template is that routing layer as open code: one call returns every venue's executable price, a split plan that is never worse than the best single venue, and one execution path per venue kind.
+SaucerSwap's own router ["is part of the SaucerSwap app and is not exposed as a public API"](https://docs.saucerswap.finance/protocol/routing), so every integrator has to quote each venue by hand and usually picks one. This template is that routing layer as open code: one call returns every venue's price, a split plan that is never worse than the best single executable venue, and an execution path for the AMMs and the V3 book. Lambdaplex is quoted for comparison only in this build.
 
 ## 60-second demo (no keys, no wallet)
 
@@ -34,14 +34,13 @@ flowchart LR
     V1[SaucerSwap V1<br/>getAmountsOut] --> R
     V2[SaucerSwap V2<br/>QuoterV2] --> R
     V3[SaucerSwap V3 book<br/>/books + /quote/exact-input] --> R
-    LP[Lambdaplex<br/>exchangeInfo + depth + fee-quote] --> R
+    LP[Lambdaplex, quote-only<br/>exchangeInfo + depth + fee-quote] --> R
     R[rank.ts<br/>executable · fillable · minNotional · V3 +5 bps] --> S[split.ts<br/>5% grid over V1/V2 routes]
     S --> P[plan.ts<br/>ExecutionPlan + planHash]
   end
   P -->|ONCHAIN_SPLIT| E1[RouterExecutor.sol<br/>atomic, totalMinOut]
   P -->|V3_MARKET| E2[Orderbook API<br/>build → sign → save]
-  P -->|LAMBDAPLEX_MARKET| E3[Lambdaplex API<br/>Signature V1]
-  E1 & E2 & E3 --> H[HCS receipt<br/>receipts/hcs.ts]
+  E1 & E2 --> H[HCS receipt<br/>receipts/hcs.ts]
   H --> M[mirror node verify<br/>receipts/verify.ts]
 ```
 
@@ -49,16 +48,16 @@ The SDK is the only place that knows venues. The app's API routes call it server
 
 ## Venues
 
-Status checked live on 2 Oct 2026; the router re-reads every flag at quote time.
+Status checked live on 3 Oct 2026; the router re-reads every flag at quote time.
 
-| Venue | Quote | Execute | Networks | Live status (2 Oct 2026) |
+| Venue | Quote | Execute | Networks | Live status (3 Oct 2026) |
 |---|---|---|---|---|
 | SaucerSwap V1 | `RouterV3.getAmountsOut` via `eth_call`, direct + via-WHBAR paths | `RouterExecutor` → `swapExactTokensForTokens` / `swapExactETHForTokens` | testnet, mainnet | pairs WHBAR/SAUCE, WHBAR/USDC, SAUCE/USDC live on both |
 | SaucerSwap V2 | `Factory.getPool` per fee tier + `QuoterV2.quoteExactInput`, direct + two-hop | `RouterExecutor` → `SwapRouter.exactInput` (+ `refundETH` for HBAR) | testnet, mainnet | testnet: 0.30 % pools only; mainnet quoter needs a fallback relay ([D-4](docs/DEVIATIONS.md)) |
-| SaucerSwap V3 order book | `GET /books` (OPEN, not halted) + `GET /books/:id/quote/exact-input`; taker fee from the book | signed MARKET order with `isAMMEnabled:true` (build → sign → save → track → cancel) | testnet, mainnet | testnet: only book 3 SAUCE/USDC is OPEN and it is **halted**; mainnet: 5 open books, min notional 15 USDC |
-| Lambdaplex | `exchangeInfo` + `depth` walk (public); `fee-quote` when keyed | Signature V1 API (keyed) | mainnet only | 13 symbols TRADING; execution not enabled in this build (quote-only) |
+| SaucerSwap V3 order book | `GET /books` (OPEN, not halted) + `GET /books/:id/quote/exact-input`; taker fee from the book | signed MARKET order with `isAMMEnabled:true` (build → sign → save → track → cancel) | testnet, mainnet | testnet: only book 3 SAUCE/USDC is OPEN (halted on 2 Oct, trading again on 3 Oct); mainnet: 5 open books, min notional 15 USDC |
+| Lambdaplex | `exchangeInfo` + `depth` walk (public); `fee-quote` when keyed | not built ([D-7](docs/DEVIATIONS.md)): `canExecute` always reports quote-only | mainnet only | 13 symbols TRADING |
 
-Selection rules mirror SaucerSwap's app: a venue must be executable right now, the quote must fill the whole size and clear the venue's minimum notional, V3 wins only when it beats the best AMM by ≥ 5 bps, and Lambdaplex competes with its taker fee already deducted. See [docs/VENUES.md](docs/VENUES.md).
+Selection rules mirror SaucerSwap's app: a venue must be executable right now, the quote must fill the whole size and clear the venue's minimum notional, V3 wins only when it beats the best AMM by ≥ 5 bps. Lambdaplex is shown with its taker fee already deducted but is never selected, because this build does not place its orders. See [docs/VENUES.md](docs/VENUES.md).
 
 ## Testnet walkthrough
 
@@ -67,7 +66,7 @@ Everything below is reproducible with a faucet account. Addresses and transactio
 1. **Create and fund a deployer.** Either `yarn hardhat:account:generate` (encrypted key, interactive deploy) or put a plain ECDSA key in the root `.env` as `DEPLOYER_PRIVATE_KEY` (non-interactive). Fund the EVM address at <https://portal.hedera.com/faucet>; the first transfer auto-creates the account (HIP-32). Budget about 200 HBAR for the whole walkthrough.
 2. **Deploy RouterExecutor.** `yarn hardhat:deploy --network hederaTestnet` prints the HashScan link and `NEXT_PUBLIC_ROUTER_EXECUTOR=0x…`; copy it into `.env`. Optional: `yarn hardhat:verify -- RouterExecutor testnet`.
 3. **Create the receipts topic.** Put the account's `0.0.x` ID and key in `.env` as `HEDERA_OPERATOR_ID` / `HEDERA_OPERATOR_KEY`, then `yarn topic:create` → `NEXT_PUBLIC_RECEIPTS_TOPIC_ID=0.0.y`.
-4. **Seed demo liquidity (optional but recommended).** `yarn seed:testnet` creates two HTS tokens, a V1 pair and a V2 pool with deliberately different prices so a split beats either venue, and prints `NEXT_PUBLIC_EXTRA_TOKENS=TKA:0.0.a:8,TKB:0.0.b:8` for `.env`.
+4. **Seed demo liquidity (optional but recommended).** `yarn seed:testnet` creates two HTS tokens and three V1 pairs: a shallow direct TKA/TKB pair and a deeper route through WHBAR at a different price, so splitting across the two routes beats either one alone. It adds a TKA/TKB V2 pool only when the live pool-creation fee is affordable, which it is not on testnet today ([D-8](docs/DEVIATIONS.md)). It prints `NEXT_PUBLIC_EXTRA_TOKENS=TKA:0.0.a:8,TKB:0.0.b:8` for `.env`.
 5. **Plan.** `yarn sdk:plan --net testnet --in TKA --out TKB --amount 1000` shows the split and the gain over the best single venue.
 6. **Execute.** From the terminal, `yarn execute:plan --net testnet --in HBAR --out SAUCE --amount 1` plans, runs the pre-flight, executes through `RouterExecutor`, publishes the receipt and verifies it in one go (this is how the evidence below was produced). In the browser, `yarn next:dev`, open `/swap`, connect a wallet on Hedera testnet (chain 296), pick the pair. The page runs the pre-flight (associate the output token with one click, approve `RouterExecutor`), then executes `executeSplit` atomically. HBAR input is sent as `msg.value`.
 7. **Verify.** The success panel links to HashScan and to `/receipts/<sequence>`, where the receipt is read back from the mirror node and matched against the `RouteExecuted` log's `planHash`.
@@ -151,13 +150,13 @@ yarn harness:run        # let the agent build the PRD and grade it
 
 - Testnet V3 book 3 was halted on 2 Oct and reopened on 3 Oct; the V3 path then ran for real (a resting order placed and cancelled, two market orders filled, one with a verified HCS receipt). Other testnet books stay closed. Mainnet V3 execution is implemented but was not run (no mainnet funds).
 - V3 wallet signing (`0x01`) is prepared (payload + SignatureMap) but the template's EVM wallet stack has no Hedera WalletConnect session; bot signing (`0x00`) is what the app uses.
-- Lambdaplex is mainnet-only and keyed; this build quotes it (public depth, keyed fee-quote) but does not place orders.
+- Lambdaplex is mainnet-only; this build quotes it (public depth, plus the signed fee-quote when keyed) but does not place orders, so the router never selects it.
 - Mainnet execution was not exercised in this submission (no mainnet funds); the code paths are implemented and unit-tested, and guarded by the flags above.
 - `RouterExecutor` is small and tested but not audited. Do not point real size at it.
 
 ## Evidence
 
-- [docs/TESTNET-EVIDENCE.md](docs/TESTNET-EVIDENCE.md): RouterExecutor address, seeded tokens/pools, the split-swap transaction (HashScan + mirror), the HCS topic and receipt message, the V3 testnet attempt.
+- [docs/TESTNET-EVIDENCE.md](docs/TESTNET-EVIDENCE.md): RouterExecutor address, seeded tokens/pools, the split swaps from the terminal and from `/swap` (HashScan + mirror), the HCS topic and receipts, the halted V3 book on 2 Oct and the V3 orders placed, cancelled and filled on 3 Oct.
 - [docs/MAINNET-EVIDENCE.md](docs/MAINNET-EVIDENCE.md): read-only mainnet quotes and what was not run.
 - [docs/SUBMISSION.md](docs/SUBMISSION.md): the bounty packet (links, numbers, what remains).
 - [docs/REFERENCES.md](docs/REFERENCES.md): every doc page read, with the facts taken from it; [docs/DEVIATIONS.md](docs/DEVIATIONS.md): where live docs or behaviour differed from the build spec.

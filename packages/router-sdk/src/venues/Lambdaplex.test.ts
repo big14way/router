@@ -78,7 +78,7 @@ describe("Lambdaplex", () => {
     expect(assetOf(WHBAR)).toBe("WHBAR");
   });
 
-  it("uses the signed fee-quote when keyed and reports executable", async () => {
+  it("uses the signed fee-quote when keyed and still reports quote-only", async () => {
     const { privateKey } = generateKeyPairSync("ed25519");
     const seed = privateKey.export({ format: "der", type: "pkcs8" }).subarray(-32).toString("hex");
     const fetchImpl = fakeFetch({
@@ -100,7 +100,10 @@ describe("Lambdaplex", () => {
     const [q] = await lp.quoteExactInput(HBAR, USDC, 100n * 10n ** 8n);
     expect(q!.amountOut).toBe(9_988_000n);
     expect(q!.detail?.feeSource).toBe("fee-quote 12 bps");
-    expect(await lp.canExecute(HBAR, USDC)).toEqual({ ok: true });
+    expect(await lp.canExecute(HBAR, USDC)).toEqual({
+      ok: false,
+      reason: "quote-only: order placement is not enabled in this build",
+    });
   });
 
   it("handles BUY side, paused symbols and missing pairs", async () => {

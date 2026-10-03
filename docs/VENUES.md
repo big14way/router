@@ -11,7 +11,7 @@ Live state checked 2 Oct 2026. Every adapter re-reads the flags at quote time; n
 
 ## Selection rules (`router/rank.ts`)
 
-1. The venue reports `canExecute().ok` for the pair (book open and not halted, symbol trading, key configured for Lambdaplex).
+1. The venue reports `canExecute().ok` for the pair (book open and not halted; Lambdaplex always reports quote-only in this build, D-7).
 2. The quote is `fillable` for the whole size and `minNotionalOk`.
 3. All quotes compare on net output: AMM output as quoted, V3 `expectedOutputAmount` minus the book's `takerFeePips`, Lambdaplex depth output minus the taker fee.
 4. V3 is chosen only when its net output ≥ best AMM × (1 + 5 bps) (SaucerSwap's own rule).

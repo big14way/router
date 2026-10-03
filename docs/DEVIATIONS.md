@@ -32,7 +32,7 @@ No co-author trailers are added to commits, at the repository owner's request.
 
 ## D-7 (2 Oct 2026) — Lambdaplex execution not built
 
-At the repository owner's instruction Phase 8 (Lambdaplex execution: order placement, fills polling, smoke script with `--place`) was skipped. The adapter quotes Lambdaplex (public depth, keyed fee-quote with Signature V1, unit-tested with a frozen vector); `canExecute` reports the venue as quote-only and the planner never selects it for execution. Phase 7 step 8 (a real mainnet V3 market fill) was also skipped: no mainnet funds were used.
+At the repository owner's instruction Phase 8 (Lambdaplex execution: order placement, fills polling, smoke script with `--place`) was skipped. The adapter quotes Lambdaplex (public depth, keyed fee-quote with Signature V1, unit-tested with a frozen vector); `canExecute` reports the venue as quote-only, keyed or not, so the ranker excludes it and the planner never selects it for execution. There is no `LAMBDAPLEX_MARKET` plan kind; `buildPlan` refuses any off-chain winner other than the V3 book. Phase 7 step 8 (a real mainnet V3 market fill) was also skipped: no mainnet funds were used.
 
 ## D-8 (2 Oct 2026) — V2 pool creation on testnet is priced out
 

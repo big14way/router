@@ -101,8 +101,13 @@ export class Lambdaplex implements Venue {
       const m = await this.findSymbol(tokenIn, tokenOut);
       if (!m) return { ok: false, reason: "no Lambdaplex symbol for this pair" };
       if (m.sym.status !== "TRADING") return { ok: false, reason: `${m.sym.symbol} is ${m.sym.status}` };
-      if (!this.keyed) return { ok: false, reason: "quote-only: no Lambdaplex API key configured" };
-      return { ok: true };
+      // Order placement is not built (DEVIATIONS D-7): report quote-only so the planner never selects it.
+      return {
+        ok: false,
+        reason: this.keyed
+          ? "quote-only: order placement is not enabled in this build"
+          : "quote-only: no Lambdaplex API key configured",
+      };
     } catch (e) {
       return { ok: false, reason: `Lambdaplex API unavailable: ${(e as Error).message}` };
     }

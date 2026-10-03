@@ -72,7 +72,7 @@ export type RouteLeg = {
   minOut: bigint;
 };
 
-export type PlanKind = "ONCHAIN_SPLIT" | "V3_MARKET" | "LAMBDAPLEX_MARKET";
+export type PlanKind = "ONCHAIN_SPLIT" | "V3_MARKET";
 
 export type ExecutionPlan = {
   kind: PlanKind;
@@ -87,7 +87,7 @@ export type ExecutionPlan = {
   slippageBps: number;
   /** ONCHAIN_SPLIT only. */
   legs?: RouteLeg[];
-  /** V3_MARKET / LAMBDAPLEX_MARKET only: the winning off-chain quote. */
+  /** V3_MARKET only: the winning order-book quote. */
   order?: Quote;
   /** Best single-venue quote considered (what the plan must beat or equal). */
   bestSingleVenue: Quote;

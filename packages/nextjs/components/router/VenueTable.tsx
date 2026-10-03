@@ -79,7 +79,10 @@ export const VenueTable = ({ reports, plan, excluded, tokenIn, tokenOut, demo }:
                   {r.status.ok ? (
                     <span className="badge badge-success badge-sm">executable</span>
                   ) : (
-                    <span className="badge badge-ghost badge-sm" title={r.status.reason}>
+                    <span
+                      className="badge badge-ghost badge-sm h-auto whitespace-normal text-left py-0.5"
+                      title={r.status.reason}
+                    >
                       {r.status.reason}
                     </span>
                   )}
@@ -89,7 +92,11 @@ export const VenueTable = ({ reports, plan, excluded, tokenIn, tokenOut, demo }:
                         {f}
                       </span>
                     ))}
-                  {r.status.ok && reason && <span className="badge badge-warning badge-sm ml-1">{reason}</span>}
+                  {r.status.ok && reason && (
+                    <span className="badge badge-warning badge-sm ml-1 h-auto whitespace-normal text-left py-0.5">
+                      {reason}
+                    </span>
+                  )}
                   <span className="text-base-content/40 ml-1">{r.latencyMs} ms</span>
                 </td>
               </tr>

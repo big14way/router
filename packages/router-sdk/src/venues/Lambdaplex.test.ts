@@ -72,7 +72,7 @@ describe("Lambdaplex", () => {
     expect(q!.detail?.feeSource).toBe("estimate 25 bps");
     expect(await lp.canExecute(HBAR, USDC)).toEqual({
       ok: false,
-      reason: "quote-only: LAMBDAPLEX_API_KEY / LAMBDAPLEX_ED25519_SEED not configured",
+      reason: "quote-only: no Lambdaplex API key configured",
     });
     expect(assetOf(HBAR)).toBe("HBAR");
     expect(assetOf(WHBAR)).toBe("WHBAR");

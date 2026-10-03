@@ -101,8 +101,7 @@ export class Lambdaplex implements Venue {
       const m = await this.findSymbol(tokenIn, tokenOut);
       if (!m) return { ok: false, reason: "no Lambdaplex symbol for this pair" };
       if (m.sym.status !== "TRADING") return { ok: false, reason: `${m.sym.symbol} is ${m.sym.status}` };
-      if (!this.keyed)
-        return { ok: false, reason: "quote-only: LAMBDAPLEX_API_KEY / LAMBDAPLEX_ED25519_SEED not configured" };
+      if (!this.keyed) return { ok: false, reason: "quote-only: no Lambdaplex API key configured" };
       return { ok: true };
     } catch (e) {
       return { ok: false, reason: `Lambdaplex API unavailable: ${(e as Error).message}` };

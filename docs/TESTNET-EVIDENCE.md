@@ -67,6 +67,18 @@ Run with `yarn execute:plan --net testnet --in HBAR --out SAUCE --amount 1` on 3
 | Mirror | https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0xc6cfced426febf4c8787534025757f82b1a581336360d7cc4bc4741412bdb207 — `RouteExecuted(…, 100000000000, 203427555539, planHash)` |
 | Receipt | topic 0.0.10833350 **sequence 2**, https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10833350/messages/2 — verified ✅ (found, SUCCESS, planHash match, totalOut match) |
 
+### Browser swap from `/swap` (3 Oct 2026, recorded for the demo video)
+
+The same TKA → TKB plan executed from the Scaffold-HBAR app with an in-browser burner wallet (deployer key, testnet only): `/swap` planned the split, HIP-719 `associate()` and the ERC-20 approval ran as separate steps, then one `executeSplit` call settled both legs.
+
+| | |
+|---|---|
+| Plan | `ONCHAIN_SPLIT`, 2 SaucerSwap V1 legs (60 % / 40 %), 1000 TKA → **2026.96536784 TKB** (best single route 1994.870546, +32.094821 TKB, +1.6 %) |
+| planHash | `0xb005e4af4ffe91f84c0a39a695752b01b81cc52a6a680062a9d245da8e767cae` |
+| Transaction | [`0xe80112401041e996cbab5f073bf8687b7246a762f6136d4a228db119ea628020`](https://hashscan.io/testnet/transaction/0xe80112401041e996cbab5f073bf8687b7246a762f6136d4a228db119ea628020), gas used 1736911, 17 child records (transfers, allowances, pool calls), all `SUCCESS` |
+| Mirror | https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0xe80112401041e996cbab5f073bf8687b7246a762f6136d4a228db119ea628020 — `RouteExecuted(0xf334…6039, TKA, TKB, 100000000000, 202696536784, planHash)` |
+| Receipt | topic 0.0.10833350 **sequence 5** (chunks 5–6), https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10833350/messages/5 — `/receipts/5` verified ✅ (found, SUCCESS, planHash match, totalOut match) |
+
 ## HCS receipts
 
 | | |

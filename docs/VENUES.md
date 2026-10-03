@@ -30,7 +30,7 @@ SAUCER_V2   executable
   fees 3000                      out 13.234468  [fillable, gas 93016]
 SAUCER_V3   executable
   book 2 SELL                    out 13.244088  [fillable, below minNotional, fee 0.015912]
-LAMBDAPLEX  unavailable: quote-only: LAMBDAPLEX_API_KEY / LAMBDAPLEX_ED25519_SEED not configured
+LAMBDAPLEX  unavailable: quote-only: no Lambdaplex API key configured
   SAUCE-USDC SELL                out 13.289693  [fillable, fee 0.033307]
 best single venue: SAUCER_V2 → 13.325436 USDC
 ```

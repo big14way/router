@@ -1,3 +1,4 @@
+import { loadEnv } from "./env";
 import { configFromEnv, parseNetwork } from "../config";
 import { buildPlan, NoRouteError, routeKey, type Requote } from "../router";
 import { resolveToken } from "../tokens";
@@ -11,6 +12,7 @@ import { renderPlan, renderReport } from "./render";
  * Quotes every venue, grid-searches a V1/V2 split, and prints the ExecutionPlan the app would execute.
  */
 async function main() {
+  loadEnv();
   const args = parseArgs(process.argv.slice(2));
   const net = parseNetwork(str(args.net, "testnet"));
   const cfg = configFromEnv(net);

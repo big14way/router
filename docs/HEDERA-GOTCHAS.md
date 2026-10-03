@@ -26,6 +26,10 @@ An account or contract must be associated with an HTS token before it can receiv
 
 Never call the WHBAR contract directly and never grant it an allowance (SaucerSwap security advisory). Wrap with `WhbarHelper.deposit()` (payable) and unwrap with `WhbarHelper.unwrapWhbar(uint256 wad)` after approving the helper. In AMM paths HBAR is represented by the WHBAR *token* address.
 
+## Gas: HTS system-contract calls are expensive
+
+Every call into the HTS system contract (association, `transferFrom`, `approve`, the router's own token transfers) costs about 700 000 gas, and creating a token costs about 1.4 M. Measured on testnet (3 Oct 2026): `RouterExecutor.executeSplit` with two V1 legs plus two first-time self-associations used 3295835 gas; a V1 `addLiquidityNewPool` (new pair + two associations + LP token creation) ran out of gas at 6 M and succeeded at 12 M. The SDK sizes `executeSplit` at 2.5 M + 3 M per leg (capped at the 15 M per-transaction limit); unused gas is refunded. The relay pre-charges `gas × gasPrice`, so the sending account needs that balance up front (8.5 M gas ≈ 7.6 HBAR at 890 gwei-equivalent).
+
 ## Gas and throttling
 
 No minimum gas charge any more (HIP-1249): actual gas used is billed, the rest refunded. Per-transaction cap is 15M gas. Hashio and the mirror node are rate limited; the SDK retries once with backoff and caches quotes for a few seconds.

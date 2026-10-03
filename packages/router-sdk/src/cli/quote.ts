@@ -1,3 +1,4 @@
+import { loadEnv } from "./env";
 import { configFromEnv, parseNetwork } from "../config";
 import { resolveToken } from "../tokens";
 import { formatUnits, parseUnits } from "../units";
@@ -10,6 +11,7 @@ import { renderReport } from "./render";
  * Prints every venue's best executable quote plus a status line per venue. Read-only on every network.
  */
 async function main() {
+  loadEnv();
   const args = parseArgs(process.argv.slice(2));
   const net = parseNetwork(str(args.net, "testnet"));
   const cfg = configFromEnv(net);

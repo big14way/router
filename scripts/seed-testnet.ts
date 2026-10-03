@@ -99,12 +99,12 @@ async function main() {
 
   const feeHbar = Hbar.fromTinybars(Math.ceil(tinycentToHbar(pairFee) * 1e8 * 1.02));
   // Direct TKA/TKB pair
-  await contractCall(client, testnet.saucer.v1Router, encodeFunctionData({ abi: v1RouterAbi, functionName: "addLiquidityNewPool", args: [A, B, DIRECT.tka, DIRECT.tkb, DIRECT.tka, DIRECT.tkb, to, deadline] }), feeHbar, 3_200_000);
+  await contractCall(client, testnet.saucer.v1Router, encodeFunctionData({ abi: v1RouterAbi, functionName: "addLiquidityNewPool", args: [A, B, DIRECT.tka, DIRECT.tkb, DIRECT.tka, DIRECT.tkb, to, deadline] }), feeHbar, 12_000_000);
   log(`V1 pair TKA/TKB created: ${await pair(A, B)}`);
   // Via-WHBAR legs (HBAR side paid as value on top of the fee)
-  await contractCall(client, testnet.saucer.v1Router, encodeFunctionData({ abi: v1RouterAbi, functionName: "addLiquidityETHNewPool", args: [A, VIA_A.tka, VIA_A.tka, 0n, to, deadline] }), Hbar.fromTinybars(feeHbar.toTinybars().toNumber() + VIA_A.hbar * 1e8), 3_200_000);
+  await contractCall(client, testnet.saucer.v1Router, encodeFunctionData({ abi: v1RouterAbi, functionName: "addLiquidityETHNewPool", args: [A, VIA_A.tka, VIA_A.tka, 0n, to, deadline] }), Hbar.fromTinybars(feeHbar.toTinybars().toNumber() + VIA_A.hbar * 1e8), 12_000_000);
   log(`V1 pair TKA/WHBAR created: ${await pair(A, testnet.tokens.WHBAR!.evm)}`);
-  await contractCall(client, testnet.saucer.v1Router, encodeFunctionData({ abi: v1RouterAbi, functionName: "addLiquidityETHNewPool", args: [B, VIA_B.tkb, VIA_B.tkb, 0n, to, deadline] }), Hbar.fromTinybars(feeHbar.toTinybars().toNumber() + VIA_B.hbar * 1e8), 3_200_000);
+  await contractCall(client, testnet.saucer.v1Router, encodeFunctionData({ abi: v1RouterAbi, functionName: "addLiquidityETHNewPool", args: [B, VIA_B.tkb, VIA_B.tkb, 0n, to, deadline] }), Hbar.fromTinybars(feeHbar.toTinybars().toNumber() + VIA_B.hbar * 1e8), 12_000_000);
   log(`V1 pair WHBAR/TKB created: ${await pair(B, testnet.tokens.WHBAR!.evm)}`);
 
   let v2Note = "skipped";
@@ -122,7 +122,7 @@ async function main() {
       encodeFunctionData({ abi: npmAbi, functionName: "mint", args: [{ token0: t0, token1: t1, fee: V2.fee, tickLower: -tick, tickUpper: tick, amount0Desired: a0, amount1Desired: a1, amount0Min: 0n, amount1Min: 0n, recipient: to, deadline }] }),
       encodeFunctionData({ abi: npmAbi, functionName: "refundETH" }),
     ];
-    await contractCall(client, testnet.saucer.v2PositionManager, encodeFunctionData({ abi: npmAbi, functionName: "multicall", args: [calls] }), Hbar.fromTinybars(Math.ceil(v2FeeHbar * 1e8 * 1.02)), 4_000_000);
+    await contractCall(client, testnet.saucer.v2PositionManager, encodeFunctionData({ abi: npmAbi, functionName: "multicall", args: [calls] }), Hbar.fromTinybars(Math.ceil(v2FeeHbar * 1e8 * 1.02)), 12_000_000);
     const pool = await evm.readContract({ address: testnet.saucer.v2Factory, abi: factoryAbi, functionName: "getPool", args: [t0, t1, V2.fee] });
     v2Note = `pool ${pool}`;
     log(`V2 pool TKA/TKB (0.30 %) created: ${pool}`);

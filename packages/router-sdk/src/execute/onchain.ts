@@ -128,7 +128,7 @@ export async function executeOnchain(plan: ExecutionPlan, o: OnchainExecuteOptio
       unwrap,
     ],
     value: hbarIn ? tinybarToWeibar(plan.amountIn) : 0n,
-    gas: BigInt(600_000 + 1_200_000 * legs.length),
+    gas: executeGas(legs.length),
   });
   const rc = await o.publicClient.waitForTransactionReceipt({ hash });
   if (rc.status !== "success") throw new Error(`executeSplit reverted: ${hash}`);
@@ -145,6 +145,13 @@ export async function executeOnchain(plan: ExecutionPlan, o: OnchainExecuteOptio
     refs: { contract: o.executor },
   };
 }
+
+/**
+ * Gas for executeSplit. Every HTS system-contract call (association, transferFrom, approve, the
+ * router's own transfers) costs ~700k on Hedera, so a V1 leg is ~2.5-3M. Unused gas is refunded
+ * (HIP-1249); the per-transaction cap is 15M.
+ */
+export const executeGas = (legs: number): bigint => BigInt(Math.min(15_000_000, 2_500_000 + 3_000_000 * legs));
 
 export function parseRouteExecuted(
   logs: { data: Hex; topics: readonly Hex[] }[],

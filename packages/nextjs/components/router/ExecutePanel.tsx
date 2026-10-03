@@ -167,7 +167,7 @@ const OnchainExecute = ({
         functionName: "executeSplit",
         args: [tokenInAddr, tokenOutAddr, legs, BigInt(plan.totalMinOut), deadline, address, unwrap],
         value: hbarIn ? tinybarToWeibar(amountIn) : 0n,
-        gas: BigInt(400_000 + 900_000 * legs.length),
+        gas: BigInt(Math.min(15_000_000, 2_500_000 + 3_000_000 * legs.length)),
       });
       const rc = await publicClient!.waitForTransactionReceipt({ hash: tx });
       let totalOut = 0n;

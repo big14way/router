@@ -18,9 +18,30 @@ Network: Hedera testnet (chain 296). Links are HashScan and mirror node (`https:
 | Verification | Sourcify v2 `exact_match` (`yarn hardhat:verify -- RouterExecutor testnet`), shown as verified on HashScan |
 | Mirror | https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.10833336 |
 
-## Seeded demo liquidity (`yarn seed:testnet`)
+## Seeded demo liquidity (`yarn seed:testnet`, 3 Oct 2026)
 
-_pending: TKA / TKB token IDs, V1 pair, V2 pool, transaction IDs._
+| | |
+|---|---|
+| TKA | [0.0.10839016](https://hashscan.io/testnet/token/0.0.10839016) (8 decimals) |
+| TKB | [0.0.10839017](https://hashscan.io/testnet/token/0.0.10839017) (8 decimals) |
+| V1 pair TKA/TKB | [0.0.10839033](https://hashscan.io/testnet/contract/0.0.10839033) `0xa1bB1719…7DC0`, reserves 10 000 TKA / 22 000 TKB (1 TKA = 2.2 TKB, shallow) |
+| V1 pair TKA/WHBAR | [0.0.10839035](https://hashscan.io/testnet/contract/0.0.10839035) `0x02965202…1e01`, 200 000 TKA / 10.4 WHBAR |
+| V1 pair WHBAR/TKB | [0.0.10839037](https://hashscan.io/testnet/contract/0.0.10839037) `0x786753fF…4114`, 400 000 TKB / 10.4 WHBAR (1 TKA = 2.0 TKB via WHBAR, deeper) |
+| Pool-creation txs | `0.0.10833326@1791014577.057844458`, `@1791014581.223861874`, `@1791014585.216879151` (each paid the live `pairCreateFee` of 2 USD ≈ 19.8 HBAR; needed 12 M gas, see gotchas) |
+| V2 pool | not created: testnet `poolCreateFee()` = 1e16 tinycent (DEVIATIONS D-8) |
+| Env | `NEXT_PUBLIC_EXTRA_TOKENS=TKA:0.0.10839016:8,TKB:0.0.10839017:8` |
+
+`yarn sdk:plan --net testnet --in TKA --out TKB --amount 1000 --step 5`:
+
+```
+SAUCER_V1   executable
+  path TKA → TKB                 out 1994.54396653  [fillable]
+  path TKA → WHBAR → TKB         out 1968.42207636  [fillable]
+plan ONCHAIN_SPLIT: 2034.27555539 TKB (min 2024.10417762 @ 50 bps)
+  best single SAUCER_V1 1994.54396653, split gains +39.73158886
+  leg V1 55%: 550 → 1143.65753885
+  leg V1 45%: 450 → 890.61801654
+```
 
 ## Routed swap through RouterExecutor (bounty testnet-transaction proof)
 
@@ -34,7 +55,17 @@ Run with `yarn execute:plan --net testnet --in HBAR --out SAUCE --amount 1` on 3
 | Transaction | [`0xe9f81b5e98fa4e56e7df317f5106a96d63e52bc00fe4dace37b62703d11dc519`](https://hashscan.io/testnet/transaction/0xe9f81b5e98fa4e56e7df317f5106a96d63e52bc00fe4dace37b62703d11dc519) |
 | Mirror | https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0xe9f81b5e98fa4e56e7df317f5106a96d63e52bc00fe4dace37b62703d11dc519 — `result: SUCCESS`, `RouteExecuted(sender, WHBAR, SAUCE, 100000000, 54083577, planHash)` |
 
-A multi-leg split (direct vs via-WHBAR on the seeded TKA/TKB pairs) is recorded below once Phase 6 seeding is funded.
+### Two-leg split (3 Oct 2026)
+
+`yarn execute:plan --net testnet --in TKA --out TKB --amount 1000 --step 5` executed the plan above atomically: 55 % through the direct TKA/TKB pair and 45 % through TKA → WHBAR → TKB.
+
+| | |
+|---|---|
+| Plan | `ONCHAIN_SPLIT`, 2 legs, 1000 TKA → **2034.27555539 TKB** (best single route 1994.54396653, +1.99 %), `totalMinOut` 2024.10417762 |
+| planHash | `0xd97ea041210e9f7fdbd4138ac8d66593ef742207a39409768da49b13435e91af` |
+| Transaction | [`0xc6cfced426febf4c8787534025757f82b1a581336360d7cc4bc4741412bdb207`](https://hashscan.io/testnet/transaction/0xc6cfced426febf4c8787534025757f82b1a581336360d7cc4bc4741412bdb207), gas used 3295835 |
+| Mirror | https://testnet.mirrornode.hedera.com/api/v1/contracts/results/0xc6cfced426febf4c8787534025757f82b1a581336360d7cc4bc4741412bdb207 — `RouteExecuted(…, 100000000000, 203427555539, planHash)` |
+| Receipt | topic 0.0.10833350 **sequence 2**, https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10833350/messages/2 — verified ✅ (found, SUCCESS, planHash match, totalOut match) |
 
 ## HCS receipts
 

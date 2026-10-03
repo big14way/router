@@ -7,9 +7,16 @@
       "node": ">=20.18.3"
     },
     "capabilities": {
-      "frontend": ["nextjs-app"],
-      "solidityFramework": ["hardhat"],
-      "packageManager": ["yarn", "npm"]
+      "frontend": [
+        "nextjs-app"
+      ],
+      "solidityFramework": [
+        "hardhat"
+      ],
+      "packageManager": [
+        "yarn",
+        "npm"
+      ]
     },
     "defaults": {
       "frontend": "nextjs-app",
@@ -17,28 +24,78 @@
       "packageManager": "yarn"
     },
     "envVars": [
-      { "key": "DEPLOYER_PRIVATE_KEY", "description": "ECDSA private key (0x-hex) of the funded testnet account that deploys RouterExecutor and seeds liquidity. Server-only." },
-      { "key": "HEDERA_OPERATOR_ID", "description": "Hedera account ID (0.0.x) used by the server to create the HCS topic and submit receipts. Server-only." },
-      { "key": "HEDERA_OPERATOR_KEY", "description": "Private key for HEDERA_OPERATOR_ID (ECDSA or ED25519, DER or hex). Server-only." },
-      { "key": "NEXT_PUBLIC_ROUTER_EXECUTOR", "description": "EVM address of the deployed RouterExecutor contract on the target network. Public." },
-      { "key": "NEXT_PUBLIC_RECEIPTS_TOPIC_ID", "description": "HCS topic ID (0.0.x) that best-execution receipts are published to. Public." },
-      { "key": "V3_BOT_ACCOUNT_ID", "description": "Hedera account ID of the bot that authenticates to the SaucerSwap V3 Orderbook API and signs orders server-side. Server-only, optional." },
-      { "key": "V3_BOT_PRIVATE_KEY", "description": "Private key for V3_BOT_ACCOUNT_ID (ECDSA or ED25519). Server-only, optional." },
-      { "key": "ALLOW_MAINNET_EXECUTION", "description": "Set to true to allow any code path that moves real mainnet funds. Default false." },
-      { "key": "MAINNET_MAX_NOTIONAL_USD", "description": "Per-order size cap in USD applied to mainnet execution. Default 20." },
-      { "key": "LAMBDAPLEX_API_KEY", "description": "Lambdaplex X-API-KEY for keyed market data and order placement (mainnet only). Server-only, optional." },
-      { "key": "LAMBDAPLEX_ED25519_SEED", "description": "Ed25519 private seed (hex) paired with LAMBDAPLEX_API_KEY for Lambdaplex Signature V1 request signing. Server-only, optional." }
+      {
+        "key": "DEPLOYER_PRIVATE_KEY",
+        "description": "ECDSA private key (0x-hex) of the funded testnet account that deploys RouterExecutor and seeds liquidity. Server-only."
+      },
+      {
+        "key": "HEDERA_OPERATOR_ID",
+        "description": "Hedera account ID (0.0.x) used by the server to create the HCS topic and submit receipts. Server-only."
+      },
+      {
+        "key": "HEDERA_OPERATOR_KEY",
+        "description": "Private key for HEDERA_OPERATOR_ID (ECDSA or ED25519, DER or hex). Server-only."
+      },
+      {
+        "key": "NEXT_PUBLIC_ROUTER_EXECUTOR",
+        "description": "EVM address of the deployed RouterExecutor contract on the target network. Public."
+      },
+      {
+        "key": "NEXT_PUBLIC_RECEIPTS_TOPIC_ID",
+        "description": "HCS topic ID (0.0.x) that best-execution receipts are published to. Public."
+      },
+      {
+        "key": "V3_BOT_ACCOUNT_ID",
+        "description": "Hedera account ID of the bot that authenticates to the SaucerSwap V3 Orderbook API and signs orders server-side. Server-only, optional."
+      },
+      {
+        "key": "V3_BOT_PRIVATE_KEY",
+        "description": "Private key for V3_BOT_ACCOUNT_ID (ECDSA or ED25519). Server-only, optional."
+      },
+      {
+        "key": "V3_BOT_KEY_TYPE",
+        "description": "ED25519 when V3_BOT_PRIVATE_KEY is a raw-hex ED25519 key (ECDSA hex and DER keys are detected). Server-only, optional."
+      },
+      {
+        "key": "ALLOW_MAINNET_EXECUTION",
+        "description": "Set to true to allow any code path that moves real mainnet funds. Default false."
+      },
+      {
+        "key": "MAINNET_MAX_NOTIONAL_USD",
+        "description": "Per-order size cap in USD applied to mainnet execution. Default 20."
+      },
+      {
+        "key": "LAMBDAPLEX_API_KEY",
+        "description": "Lambdaplex X-API-KEY for keyed market data and order placement (mainnet only). Server-only, optional."
+      },
+      {
+        "key": "LAMBDAPLEX_ED25519_SEED",
+        "description": "Ed25519 private seed (hex) paired with LAMBDAPLEX_API_KEY for Lambdaplex Signature V1 request signing. Server-only, optional."
+      }
     ],
     "outro": {
       "sections": [
         {
           "title": "Next steps",
           "steps": [
-            { "label": "See quotes from every venue with no wallet and no env", "command": "{run:next:dev}" },
-            { "label": "Quote from the terminal", "command": "{run:sdk:quote} --net testnet --in WHBAR --out SAUCE --amount 10" },
-            { "label": "Fund a testnet account, then deploy RouterExecutor", "url": "https://portal.hedera.com/faucet" },
-            { "command": "{run:hardhat:deploy} --network hederaTestnet" },
-            { "text": "Full testnet and mainnet walkthroughs, the env var table and the Hedera gotchas are in README.md." }
+            {
+              "label": "See quotes from every venue with no wallet and no env",
+              "command": "{run:next:dev}"
+            },
+            {
+              "label": "Quote from the terminal",
+              "command": "{run:sdk:quote} --net testnet --in WHBAR --out SAUCE --amount 10"
+            },
+            {
+              "label": "Fund a testnet account, then deploy RouterExecutor",
+              "url": "https://portal.hedera.com/faucet"
+            },
+            {
+              "command": "{run:hardhat:deploy} --network hederaTestnet"
+            },
+            {
+              "text": "Full testnet and mainnet walkthroughs, the env var table and the Hedera gotchas are in README.md."
+            }
           ]
         }
       ]

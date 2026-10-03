@@ -3636,6 +3636,7 @@ __metadata:
   resolution: "@sh/router-sdk@workspace:packages/router-sdk"
   dependencies:
     "@eslint/eslintrc": ^3.3.7
+    "@hiero-ledger/proto": 2.26.0-beta.3
     "@hiero-ledger/sdk": ^2.80.0
     "@types/node": ^20.17.0
     "@typescript-eslint/eslint-plugin": ~8.27.0

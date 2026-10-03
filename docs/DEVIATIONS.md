@@ -37,3 +37,11 @@ At the repository owner's instruction Phase 8 (Lambdaplex execution: order place
 ## D-8 (2 Oct 2026) — V2 pool creation on testnet is priced out
 
 `SaucerSwapV2Factory.poolCreateFee()` on testnet returns `10000000000000000` tinycent (≈ 1 000 000 USD, ≈ 10 M HBAR at the live rate); `mintFee()` is 0.05 USD and V1 `pairCreateFee()` is 2 USD. BUILD.md Phase 6 asks for a V1 pair *and* a V2 pool with different prices. **What we do:** `scripts/seed-testnet.ts` reads the live fees, creates the V2 pool only when `poolCreateFee + mintFee` is below `--max-fee-hbar` (default 50 HBAR), and otherwise seeds V1 only with three pairs (TKA/TKB direct, TKA/WHBAR, WHBAR/TKB) so the split runs across the direct V1 route and the via-WHBAR V1 route, as the spec's fallback describes. On mainnet, where the fee is sane, the same script creates the V2 pool.
+
+## D-9 (3 Oct 2026) — V3 wallet signing (mode `0x01`) is prepared, not transported
+
+BUILD.md Phase 7 step 1 asks for the `0x01` wallet path "for HashPack via WalletConnect". The SDK produces everything the reactor verifies for that mode: the canonical order text and the HIP-820 personal-sign bytes (`personalSignPayload`), and the HIP-632 `SignatureMap` wrapper with the mode byte (`signatureMapMode01`). The blank Scaffold-HBAR template ships RainbowKit/wagmi (EVM wallets) and no Hedera-native WalletConnect session, so the app does not open a `hedera_signMessage` request to HashPack. In the app, V3 orders are signed server-side by the bot (`0x00`) when `V3_BOT_*` is configured; wallet users get the on-chain onboarding steps (one-click) and the payload to sign. Adding a Hedera WalletConnect connector is the one missing piece and is documented in AGENTS.md as a follow-up.
+
+## D-10 (3 Oct 2026) — HTS allowance limits for Permit2 approvals
+
+BUILD.md Phase 7 step 3 says "ERC-20 approve to Permit2". On HTS tokens that approval is bounded: `approve(permit2, 2^256-1)` reverts with `INVALID_OPERATION` (allowances are int64) and `approve(permit2, 2^63-1)` reverts with HTS code 289 `AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY` on finite-supply tokens (testnet SAUCE and USDC both have `max_supply` 1e15). The SDK reads the token's supply from the mirror node and approves `min(max_supply, 2^63-1)`; a standing allowance at that cap counts as onboarded.

@@ -32,7 +32,10 @@ yarn sdk:plan  --net mainnet --in SAUCE --out USDC --amount 5000 [--step 5] [--s
 yarn hardhat:test                    # offline, mocks; HEDERA_FORKING=true only for yarn hardhat:chain
 yarn hardhat:deploy --network hederaTestnet   # reads DEPLOYER_PRIVATE_KEY from root .env or prompts
 yarn topic:create [--net testnet]    # HCS receipts topic
-yarn seed:testnet                    # TKA/TKB tokens + V1 pair + V2 pool
+yarn seed:testnet                    # TKA/TKB tokens + V1 pairs (+ V2 pool when the fee is sane)
+yarn execute:plan --net testnet --in TKA --out TKB --amount 1000   # plan → RouterExecutor → HCS receipt → verify
+yarn v3:onboard --net testnet --book 3            # V3 bot onboarding (association, Permit2, reactor)
+yarn v3:place-and-cancel --net testnet --book 3   # V3 resting limit + cancel, raw responses printed
 yarn next:dev | yarn next:build
 node scripts/gate-check.mjs --local  # the bounty gate against this checkout
 ```
@@ -56,7 +59,8 @@ node scripts/gate-check.mjs --local  # the bounty gate against this checkout
 - Units only through `units.ts`: 8-decimal tinybar in contracts and function arguments, 18-decimal weibar only in transaction `value` / relay balances (`tinybarToWeibar`, `weibarToTinybar`). Token amounts are `bigint` in smallest units; never `number`.
 - Associate before transfer: contracts via HTS `0x167` (22 ok, 23 already), users via HIP-719 `associate()` on the token address. `RouterExecutor` caches associations.
 - Never call the WHBAR contract directly or approve it; use `WhbarHelper`. Paths use the WHBAR token address for HBAR legs.
-- Fetch the V3 signing domain and reactor from `GET /signature/domain` at runtime; sign the *returned* build struct; prefix `0x00` (bot) / `0x01` (wallet). Keep all order integers as strings.
+- Fetch the V3 signing domain and reactor from `GET /signature/domain` at runtime; sign the *returned* build struct; prefix `0x00` (bot) / `0x01` (wallet). Keep all order integers as strings. The EIP-712 types live in `v3/signing.ts` and were taken from the verified reactor source; `/auth/verify` wants the Hedera personal-sign form of the challenge.
+- HTS approvals are bounded: never approve above the token's `max_supply` (code 289) or int64; `v3/onboarding.ts` computes the cap. Relay transactions need an explicit legacy `gasPrice`.
 - Secrets are server-only: `DEPLOYER_PRIVATE_KEY`, `HEDERA_OPERATOR_KEY`, `V3_BOT_PRIVATE_KEY`, `LAMBDAPLEX_*`. Nothing secret is ever `NEXT_PUBLIC_`.
 - Mainnet money moves only behind `ALLOW_MAINNET_EXECUTION=true` and under `MAINNET_MAX_NOTIONAL_USD`.
 - Public relays and the mirror node are rate limited and reject some simulations: use `ethCall` (failover) and cache quotes; label testnet prices "demo liquidity".

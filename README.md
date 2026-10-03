@@ -81,7 +81,18 @@ Quoting mainnet needs nothing. Executing on mainnet is opt-in and capped:
 | `ALLOW_MAINNET_EXECUTION=true` | required by every code path that can move real funds (`/swap`, receipt publishing, V3 placement); default `false` |
 | `MAINNET_MAX_NOTIONAL_USD` | per-order cap, default 20 USD |
 
-With the flags set, deploy `RouterExecutor` with `yarn hardhat:deploy --network hederaMainnet`, create a topic with `yarn topic:create --net mainnet`, and use `/swap` exactly as on testnet. The V3 order path needs the account onboarded (token association, Permit2 approval, reactor approval inside Permit2); `/swap` shows the missing steps with one-click transactions, and `scripts/v3-onboard.ts` does the same for a bot account. The signing domain and reactor address are fetched from `GET /signature/domain` at runtime and never hard-coded. See [docs/MAINNET-EVIDENCE.md](docs/MAINNET-EVIDENCE.md) for what was and was not run.
+With the flags set, deploy `RouterExecutor` with `yarn hardhat:deploy --network hederaMainnet`, create a topic with `yarn topic:create --net mainnet`, and use `/swap` exactly as on testnet. See [docs/MAINNET-EVIDENCE.md](docs/MAINNET-EVIDENCE.md) for what was and was not run.
+
+### SaucerSwap V3 orders (any network)
+
+The V3 path is a signed-order flow, not a contract call: authenticate (challenge → Hedera personal-sign → JWT), onboard the account (associate both tokens, approve Permit2, approve the reactor inside Permit2), quote, `POST /orders/build`, sign the *returned* struct (EIP-712 against the runtime `GET /signature/domain`, mode byte `0x00`), `POST /orders/save`, track `/ws/user-events` or `GET /orders/:id/history`, cancel with `POST /cancel`.
+
+```bash
+yarn v3:onboard --net testnet --book 3                     # bot account: run every missing onboarding step, re-verified on chain
+yarn v3:place-and-cancel --net testnet --book 3 --input base --amount 10000000 --factor 10   # resting limit far from market, then cancel
+```
+
+The bot is `V3_BOT_ACCOUNT_ID` / `V3_BOT_PRIVATE_KEY` (falls back to the deployer key). With a bot configured, `/swap` places V3 market orders server-side and `/orders` lists and cancels them; wallet users get one-click onboarding transactions and the `0x01` personal-sign payload (see [D-9](docs/DEVIATIONS.md)). On 3 Oct 2026 testnet book 3 was halted: build and signature succeeded, `POST /orders/save` answered `Orderbook 3 is currently halted` — recorded verbatim in [docs/TESTNET-EVIDENCE.md](docs/TESTNET-EVIDENCE.md).
 
 ## Environment variables
 
@@ -94,7 +105,7 @@ The CLI writes `.env.example` from `template.json`; copy it to `.env` in the rep
 | `NEXT_PUBLIC_ROUTER_EXECUTOR` | `.env` | public | deployed `RouterExecutor` address the app executes through |
 | `NEXT_PUBLIC_RECEIPTS_TOPIC_ID` | `.env` | public | HCS topic receipts are published to and verified from |
 | `NEXT_PUBLIC_EXTRA_TOKENS` | `.env` | public | extra HTS tokens for the pickers, `SYM:0.0.id:decimals,…` (printed by `seed:testnet`) |
-| `V3_BOT_ACCOUNT_ID`, `V3_BOT_PRIVATE_KEY` | `.env` | server | optional bot that authenticates to the V3 API and signs orders with mode `0x00` |
+| `V3_BOT_ACCOUNT_ID`, `V3_BOT_PRIVATE_KEY`, `V3_BOT_KEY_TYPE` | `.env` | server | optional bot that authenticates to the V3 API and signs orders with mode `0x00` (`V3_BOT_KEY_TYPE=ED25519` for raw-hex ED25519 keys) |
 | `ALLOW_MAINNET_EXECUTION`, `MAINNET_MAX_NOTIONAL_USD` | `.env` | server | mainnet guard rails (above) |
 | `LAMBDAPLEX_API_KEY`, `LAMBDAPLEX_ED25519_SEED` | `.env` | server | optional Lambdaplex key; enables the venue's own fee quote |
 | `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL`, `NEXT_PUBLIC_HEDERA_MAINNET_RPC_URL`, `HEDERA_FALLBACK_RPC_URLS` | `.env` | public | override the JSON-RPC relays (public ones are rate limited) |
@@ -125,7 +136,8 @@ node scripts/gate-check.mjs --local   # scaffold this checkout with create-scaff
 
 ## Limitations
 
-- Testnet V3 books are closed or halted (checked 2 Oct 2026): V3 placement on testnet is attempted and the raw API response recorded, but a testnet fill cannot be demonstrated.
+- Testnet V3 books are closed or halted (checked 2–3 Oct 2026): onboarding completed and a signed order was built, but `POST /orders/save` refuses the halted book, so a testnet V3 fill cannot be demonstrated. Mainnet V3 execution is implemented but was not run (no mainnet funds).
+- V3 wallet signing (`0x01`) is prepared (payload + SignatureMap) but the template's EVM wallet stack has no Hedera WalletConnect session; bot signing (`0x00`) is what the app uses.
 - Lambdaplex is mainnet-only and keyed; this build quotes it (public depth, keyed fee-quote) but does not place orders.
 - Mainnet execution was not exercised in this submission (no mainnet funds); the code paths are implemented and unit-tested, and guarded by the flags above.
 - `RouterExecutor` is small and tested but not audited. Do not point real size at it.

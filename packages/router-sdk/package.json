@@ -21,6 +21,7 @@
     "plan": "tsx src/cli/plan.ts"
   },
   "dependencies": {
+    "@hiero-ledger/proto": "2.26.0-beta.3",
     "@hiero-ledger/sdk": "^2.80.0",
     "dotenv": "~16.4.5",
     "viem": "2.39.0"

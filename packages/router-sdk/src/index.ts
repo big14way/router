@@ -9,3 +9,4 @@ export * from "./lambdaplex/auth";
 export * from "./router";
 export * from "./receipts";
 export * from "./execute";
+export * from "./v3";

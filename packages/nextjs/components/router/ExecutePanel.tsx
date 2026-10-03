@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { V3Panel } from "./V3Panel";
 import type { AppFlags } from "./useQuote";
 import { type ExecutionPlan, encodeLegPath, tinybarToWeibar } from "@sh/router-sdk/client";
 import { type Address, type Hex, decodeEventLog } from "viem";
@@ -43,7 +44,7 @@ export const ExecutePanel = ({ quote, flags }: Props) => {
     );
   }
   if (plan.kind === "ONCHAIN_SPLIT") return <OnchainExecute quote={quote} plan={plan} flags={flags} />;
-  if (plan.kind === "V3_MARKET") return <V3Execute plan={plan} flags={flags} />;
+  if (plan.kind === "V3_MARKET") return <V3Panel plan={plan} flags={flags} />;
   return <LambdaplexExecute plan={plan} flags={flags} />;
 };
 
@@ -297,44 +298,6 @@ const whbarAddress = (quote: QuoteResponse): string => {
   const v2 = quote.reports.find(r => r.venue === "SAUCER_V2")?.quotes[0];
   if (v2 && typeof v2.path === "string") return quote.tokenIn.native ? v2.path.slice(0, 42) : `0x${v2.path.slice(-40)}`;
   throw new Error("no AMM route to derive the WHBAR address from");
-};
-
-const V3Execute = ({ plan, flags }: { plan: ExecutionPlan; flags: AppFlags | null }) => {
-  const { address } = useAccount();
-  const [status, setStatus] = useState<{
-    configured: boolean;
-    message: string;
-    steps?: { label: string; done: boolean }[];
-  } | null>(null);
-  useEffect(() => {
-    fetch(`/api/v3/status?net=${plan.network}&book=${plan.order?.bookId ?? ""}&account=${address ?? ""}`)
-      .then(r => r.json())
-      .then(setStatus)
-      .catch(() => setStatus({ configured: false, message: "V3 status unavailable" }));
-  }, [plan.network, plan.order?.bookId, address]);
-  return (
-    <div className="flex flex-col gap-3">
-      <h3 className="font-semibold m-0">{KIND_LABEL[plan.kind]}</h3>
-      <p className="text-sm m-0">
-        Book {plan.order?.bookId} · {plan.order?.side} · {fmtUnits(plan.amountIn, plan.tokenIn.decimals)}{" "}
-        {plan.tokenIn.symbol} → {fmtUnits(plan.totalOut, plan.tokenOut.decimals)} {plan.tokenOut.symbol}
-      </p>
-      {status?.steps && (
-        <ul className="steps steps-vertical text-sm">
-          {status.steps.map(s => (
-            <li key={s.label} className={`step ${s.done ? "step-primary" : ""}`}>
-              {s.label}
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="alert text-sm">{status?.message ?? "Checking onboarding…"}</div>
-      <p className="text-xs text-base-content/60 m-0">
-        Server-side bot signing ({flags?.v3Bot ? "configured" : "not configured"}) uses the <code>0x00</code> signature
-        mode; wallet signing uses <code>0x01</code>.
-      </p>
-    </div>
-  );
 };
 
 const LambdaplexExecute = ({ plan, flags }: { plan: ExecutionPlan; flags: AppFlags | null }) => (

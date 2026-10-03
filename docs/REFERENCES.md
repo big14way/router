@@ -189,3 +189,14 @@ Sources:
   - Settlement moves funds through Permit2 `transferFrom` (allowance-transfer flavour); cancellations: `cancelOrder`, `cancelAllBelowNonce`, signed variants with `CancelOrder(bytes32 orderHash,uint256 deadline)` / `CancelAllBelowNonce(address user,uint256 newFloor,uint256 deadline)`.
 - Permit2 is not on the contracts page; `reactor.permit2()` returns it at runtime: testnet `0x2e2C4f4277183F2BC5eb982CD4cD27C1fb01c6Ed` (0.0.8991877), mainnet `0x8D53a86b10b503f284A0EA9e8316bc6081432A96` (0.0.10527448); both expose `allowance(owner,token,spender)`, `approve(token,spender,uint160 amount,uint48 expiration)`, `transferFrom(from,to,uint160,token)`.
 - Hedera Harness (`hedera-harness` 1.2.2) exists on npm; peer deps playwright ^1.61.1 and `@hiero-ledger/sdk` ^2.86.2 (template pins 2.80.0) — evaluated in Phase 13.
+
+### Phase 7 — facts established live on testnet (3 Oct 2026)
+
+- `POST /auth/verify` accepts the **Hedera personal-sign** form: sign `"\x19Hedera Signed Message:\n" + utf8ByteLength(message) + message` with the account key (Hiero SDK `PrivateKey.sign`, ECDSA → 64-byte r‖s, ED25519 → 64 bytes), hex `0x…`. EIP-191 `personal_sign`, raw keccak and raw-bytes ECDSA are all rejected with `401 {"message":"Invalid signature"}`. JWT payload: `{sub: <evm address>, hederaPublicKey, iat, exp}` with `exp − iat` = 6 h.
+- `POST /orders/build` body is `{ "orderRequests": [ … ] }` (not `items`/array); response `{ "orders": [ {info, input, output, makerOnly, takerOnce, maxTakerFeePips, maxMakerFeePips, meta:{isAMMEnabled}} ] }` — exactly the reactor's `PartialFillLimitOrder`; `info.additionalValidationContract` is set by the server (`0xd1a45eba17b05cc62b11e2b62b8a00651a79014c` on testnet) and must be signed as returned.
+- `POST /orders/save` body `{ "items": [ {order, signature, orderbookId, type} ] }`; a halted book answers `400 {"error":"Orderbook 3 is currently halted and not accepting new orders"}` after a successful build.
+- Grid errors from build: `Order size not a multiple of market lot size` (book 3: 10 SAUCE passes, 1 and 0.1 SAUCE do not) and `price <in>/<out> is not a multiple of tick step 1/10000000`.
+- `GET /fees/:id?side=taker|maker` (not BUY/SELL) → `{takerFeePips}` / `{makerFeePips, capFractionPips}`; `GET /onboarding/:id/status` → `{steps:{associateBaseToken, associateQuoteToken, approveBaseTokenPermit2, approveQuoteTokenPermit2, approveBaseTokenReactor, approveQuoteTokenReactor}, pendingSteps, completedSteps, isComplete}` — matches what the SDK derives from chain state.
+- `GET /orders` → `{orders, total, page, limit, lastUpdateId}`.
+- Relay: `sendTransaction` must carry an explicit legacy `gasPrice` (`eth_gasPrice`); viem's EIP-1559 defaults are rejected with `-32009 Gas price '100' is below configured minimum gas price`.
+- HTS `approve` via the ERC-20 facade: `INVALID_OPERATION` above int64, code 289 above the token's `max_supply` (DEVIATIONS D-10).

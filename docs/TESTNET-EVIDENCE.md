@@ -93,4 +93,37 @@ Checked 2 Oct 2026 via `GET https://testnet-orderbook-api.saucerswap.finance/boo
 
 `GET /signature/domain` → `{"name":"PartialFillLimitOrderReactor","version":"1","chainId":296,"verifyingContract":"0x5707B946EE64bD750A587261Ce36ec7024F3088B"}`.
 
-_pending: onboarding + place-and-cancel attempt against book 3 with raw API responses (V3 execution phase)._
+### Place-and-cancel attempt on book 3 (3 Oct 2026, `yarn v3:place-and-cancel --net testnet --book 3 --input base --amount 10000000 --factor 10`)
+
+Bot = the deployer account 0.0.10833326 (ECDSA). Authentication succeeded (challenge → Hedera personal-sign → JWT, `sub` = the EVM address). Every response below is verbatim.
+
+| Step | Result |
+|---|---|
+| `GET /books` (book 3) | `{"id":"3","pair":"SAUCE/USDC","status":"OPEN","halted":1,"minNotional":"1","tickStep":"0.0000001","sizeStep":"0.00001"}` → `bookStatus` = `book 3 is OPEN but market is halted` |
+| `GET /books/3/quote/exact-input?inputToken=0x…120f46&inputAmount=10000000` (JWT) | `{"snappedInputAmount":"10000000","consumedInputAmount":"0","expectedOutputAmount":"0","suggestedOutputAmount":"1","slippageBps":500,"fillable":false}` (empty, halted book) |
+| `POST /orders/build` (LIMIT, sell 10 SAUCE for 100 USDC, 10× any price, 1 h deadline, `isAMMEnabled:true`) | **200** — returned struct: `info{reactor 0x5707…088B, swapper 0xf334…6039, nonce "1", deadline, additionalValidationContract 0xd1a45eba17b05cc62b11e2b62b8a00651a79014c, additionalValidationData "0x"}`, `input{0x…120f46, "10000000"}`, `output{0x…1549, "100000000", recipient}`, `makerOnly false, takerOnce false, maxTakerFeePips 2000, maxMakerFeePips 2000`, `meta{isAMMEnabled:true}` |
+| sign (mode `0x00`, EIP-712 against the fetched domain) | ok (65-byte ECDSA signature + mode byte) |
+| `POST /orders/save` | **400** `{"error":"Orderbook 3 is currently halted and not accepting new orders"}` |
+| `GET /orders?orderbookId=3` | `{"orders":[],"total":0,"page":1,"limit":20,"lastUpdateId":0}` |
+
+Earlier builds documented the grid rules on this book: `Order size not a multiple of market lot size` for 1 SAUCE / 0.1 SAUCE sells (10 SAUCE and 1000 SAUCE pass) and `price 1000000/1000050000 is not a multiple of tick step 1/10000000` for an off-tick price. `GET /fees/3?side=taker` → `{"takerFeePips":2000}`; `side=maker` → `{"makerFeePips":2000,"capFractionPips":250000}`.
+
+### Onboarding attempt (`yarn v3:onboard --net testnet --book 3`)
+
+`GET /onboarding/3/status` (JWT) before: `{"steps":{"associateBaseToken":true,"associateQuoteToken":false,"approveBaseTokenPermit2":false,"approveQuoteTokenPermit2":false,"approveBaseTokenReactor":false,"approveQuoteTokenReactor":false},"pendingSteps":[…],"completedSteps":["associateBaseToken"],"isComplete":false}` — identical to what the SDK derived from chain state (mirror association, ERC-20 `allowance`, `permit2.allowance`). Permit2 read from the reactor: `0x2e2C4f4277183F2BC5eb982CD4cD27C1fb01c6Ed` (0.0.8991877).
+
+First `approve(permit2, 2^256-1)` on SAUCE reverted: tx `0xabf165f6…` → `CONTRACT_EXECUTION_EXCEPTION / INVALID_OPERATION` (HTS allowances are int64; the SDK now approves `2^63-1`). Results after the fix: see below.
+
+Onboarding transactions (all `SUCCESS`, re-verified on chain after each; approvals capped at the token `max_supply`, DEVIATIONS D-10):
+
+| Step | Transaction |
+|---|---|
+| approveBaseTokenPermit2 (SAUCE → Permit2) | [`0xab9ff949…`](https://hashscan.io/testnet/transaction/0xab9ff94924866b050ce769da11ea85c7747393641390d659d130e7a160d51d8e) |
+| approveBaseTokenReactor (`permit2.approve(SAUCE, reactor, max, maxExpiry)`) | [`0x9c24f07f…`](https://hashscan.io/testnet/transaction/0x9c24f07ff8385f9c3ee2a81845b65bc02ef2cb4fcc6324a006e1d4bce6a28a85) |
+| associateQuoteToken (HIP-719 `associate()` on USDC) | [`0x2e3cfa2e…`](https://hashscan.io/testnet/transaction/0x2e3cfa2e017b0f2a1b4d45f7c8d44e254ee1731134060975ca9aa0bdd525ec2b) |
+| approveQuoteTokenPermit2 (USDC → Permit2) | [`0x77ca5bf0…`](https://hashscan.io/testnet/transaction/0x77ca5bf04dca68f8f7a6e4eb69137d0a650430c92fb4dacd5f9cfc71682c21d7) |
+| approveQuoteTokenReactor | [`0xab029546…`](https://hashscan.io/testnet/transaction/0xab0295461cbf71c136a5dc7f4c7e2cadcf96d9bae589641a51bd9e46cb79bd86) |
+
+After: chain = all six steps true; `GET /onboarding/3/status` → `{"isComplete":true,"pendingSteps":[]}`. Failed earlier attempts are also on HashScan: `0xabf165f6…`/`0x494e8ccd…` (`INVALID_OPERATION`, approval above int64) and `0xb3b809c2…`/`0x5c5e178e…` (HTS code 289 `AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY`, approval above max supply).
+
+Place-and-cancel rerun on the fully onboarded account: build 200, signature ok, `POST /orders/save` → `400 {"error":"Orderbook 3 is currently halted and not accepting new orders"}`. The halt is the only thing between this account and a resting order on testnet; the same code path is what `/api/v3/execute` and the `/swap` page run.

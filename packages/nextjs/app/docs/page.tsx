@@ -15,6 +15,7 @@ const DOCS: Record<string, string> = {
   mainnet: "docs/MAINNET-EVIDENCE.md",
   references: "docs/REFERENCES.md",
   deviations: "docs/DEVIATIONS.md",
+  submission: "docs/SUBMISSION.md",
 };
 
 export const dynamic = "force-dynamic";

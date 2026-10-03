@@ -95,6 +95,10 @@
             },
             {
               "text": "Full testnet and mainnet walkthroughs, the env var table and the Hedera gotchas are in README.md."
+            },
+            {
+              "label": "Develop further with the Hedera Harness (optional)",
+              "command": "{run:harness:run}"
             }
           ]
         }

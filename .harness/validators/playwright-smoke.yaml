@@ -1,0 +1,27 @@
+server:
+  command: yarn next:dev
+  url: http://localhost:3000
+  timeoutMs: 180000
+
+defaults:
+  timeoutMs: 45000
+  hydrationTimeoutMs: 30000
+  failOnConsoleError: false
+
+routes:
+  - name: quote
+    path: /
+  - name: swap
+    path: /swap
+  - name: orders
+    path: /orders
+  - name: receipt
+    path: /receipts/harness
+  - name: docs
+    path: /docs
+
+forbidden:
+  visibleText:
+    - "Application error"
+    - "Unhandled Runtime Error"
+    - "Internal Server Error"

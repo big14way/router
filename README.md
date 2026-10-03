@@ -134,6 +134,18 @@ node scripts/gate-check.mjs --local   # scaffold this checkout with create-scaff
 
 `.github/workflows/ci.yml` runs all of that plus `gitleaks` on every push. `scripts/gate-check.mjs` without `--local` scaffolds from GitHub, which is exactly what judges run.
 
+### Hedera Harness recipe
+
+`.harness/` holds a [hedera-harness](https://github.com/hedera-dev/hedera-harness) recipe: `spec.yaml`, a PRD for extending the router, deterministic validators (`validators/static.json`, `validators/yarn.json` — lint, SDK coverage, executor tests, a read-only all-venues mainnet quote, build), a Playwright gate for the five routes (`validators/playwright-smoke.yaml`) and an acceptance contract (`acceptance-contract.json`).
+
+```bash
+yarn harness:doctor     # preflight: tools, recipe, validators, agent
+yarn harness:validate   # tiers 0–2 against this checkout (no agent)
+yarn harness:run        # let the agent build the PRD and grade it
+```
+
+`validate` forbids a root `.env` (secrets never belong in a generated workspace), so run it on a clean checkout or move your `.env` aside first. On 3 Oct 2026 the static, command and Playwright tiers passed on this repository with the only findings being that local `.env`.
+
 ## Limitations
 
 - Testnet V3 books are closed or halted (checked 2–3 Oct 2026): onboarding completed and a signed order was built, but `POST /orders/save` refuses the halted book, so a testnet V3 fill cannot be demonstrated. Mainnet V3 execution is implemented but was not run (no mainnet funds).
@@ -146,6 +158,7 @@ node scripts/gate-check.mjs --local   # scaffold this checkout with create-scaff
 
 - [docs/TESTNET-EVIDENCE.md](docs/TESTNET-EVIDENCE.md): RouterExecutor address, seeded tokens/pools, the split-swap transaction (HashScan + mirror), the HCS topic and receipt message, the V3 testnet attempt.
 - [docs/MAINNET-EVIDENCE.md](docs/MAINNET-EVIDENCE.md): read-only mainnet quotes and what was not run.
+- [docs/SUBMISSION.md](docs/SUBMISSION.md): the bounty packet (links, numbers, what remains).
 - [docs/REFERENCES.md](docs/REFERENCES.md): every doc page read, with the facts taken from it; [docs/DEVIATIONS.md](docs/DEVIATIONS.md): where live docs or behaviour differed from the build spec.
 
 ## Licence

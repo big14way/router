@@ -1,0 +1,37 @@
+{
+  "jsonAssertions": [
+    { "file": "template.json", "path": "name", "equals": "hedera-smart-order-router" },
+    { "file": "template.json", "path": "create-scaffold-hbar.capabilities.frontend", "equals": ["nextjs-app"] },
+    { "file": "template.json", "path": "create-scaffold-hbar.capabilities.solidityFramework", "equals": ["hardhat"] },
+    { "file": "package.json", "path": "packageManager", "equals": "yarn@3.2.3" }
+  ],
+  "fileAssertions": {
+    "required": [
+      "README.md",
+      "AGENTS.md",
+      "LICENSE",
+      "template.json",
+      ".env.example",
+      "scripts/gate-check.mjs",
+      "packages/router-sdk/src/units.ts",
+      "packages/router-sdk/src/venues/index.ts",
+      "packages/router-sdk/src/router/plan.ts",
+      "packages/router-sdk/src/v3/signing.ts",
+      "packages/router-sdk/src/receipts/verify.ts",
+      "packages/hardhat/contracts/RouterExecutor.sol",
+      "packages/hardhat/test/RouterExecutor.test.ts",
+      "packages/nextjs/app/swap/page.tsx",
+      "packages/nextjs/app/api/quote/route.ts",
+      "docs/VENUES.md",
+      "docs/HEDERA-GOTCHAS.md",
+      "docs/TESTNET-EVIDENCE.md"
+    ],
+    "forbidden": [".env", "packages/nextjs/.env", "packages/hardhat/.env", "packages/foundry"]
+  },
+  "textAssertions": [
+    { "file": "README.md", "contains": ["yarn sdk:quote", "yarn sdk:plan", "ALLOW_MAINNET_EXECUTION", "RouterExecutor", "HCS"] },
+    { "file": "AGENTS.md", "contains": ["How to add a venue", "units.ts", "signature/domain", "ALLOW_MAINNET_EXECUTION"] },
+    { "file": "packages/router-sdk/src/venues/index.ts", "contains": ["SAUCER_V1", "SAUCER_V2", "SAUCER_V3", "LAMBDAPLEX"] },
+    { "file": "packages/hardhat/contracts/RouterExecutor.sol", "contains": ["InsufficientOutput", "RouteExecuted", "associateToken", "nonReentrant"] }
+  ]
+}

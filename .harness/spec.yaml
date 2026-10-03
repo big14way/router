@@ -1,0 +1,49 @@
+schemaVersion: 2
+
+name: hedera-smart-order-router
+description: >-
+  Smart order router template for Hedera: quote SaucerSwap V1, V2, the V3 order book and Lambdaplex,
+  split across V1/V2, execute on the best venue through RouterExecutor or the V3 signed-order API,
+  publish an HCS best-execution receipt and verify it from the mirror node.
+
+agent: claude
+
+prd: .harness/prd.md
+
+maxAttempts: 3
+
+baseline:
+  commands:
+    - name: install
+      command: yarn install --immutable
+      timeoutMs: 900000
+    - name: build
+      command: yarn next:build
+      timeoutMs: 900000
+
+validators:
+  static: .harness/validators/static.json
+  commands: .harness/validators/yarn.json
+  playwright: .harness/validators/playwright-smoke.yaml
+
+contract: .harness/acceptance-contract.json
+
+constraints:
+  packageManager: yarn@3.2.3
+  workspaces:
+    - packages/router-sdk
+    - packages/hardhat
+    - packages/nextjs
+
+forbiddenFiles:
+  - .env
+  - packages/nextjs/.env
+  - packages/hardhat/.env
+  - packages/foundry
+
+secretScan:
+  failOnFiles:
+    - .env
+  patterns:
+    - name: private-key-assignment
+      pattern: "(DEPLOYER_PRIVATE_KEY|HEDERA_OPERATOR_KEY|V3_BOT_PRIVATE_KEY|LAMBDAPLEX_ED25519_SEED|PRIVATE_KEY)\\s*=\\s*(0x)?[0-9a-fA-F]{32,}"

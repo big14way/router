@@ -1,0 +1,45 @@
+{
+  "assertions": [
+    {
+      "id": "C1",
+      "statement": "The quote page lists SaucerSwap V1, SaucerSwap V2, the SaucerSwap V3 book and Lambdaplex with either a numeric output or an explicit unavailable reason for each, without a wallet connected.",
+      "howToVerify": "Open /. Wait for the venue table. Confirm four venue rows exist and each shows an output amount or a status badge with a reason.",
+      "severity": "critical",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C2",
+      "statement": "Switching to mainnet (read-only) on the quote page shows a plan card whose total is at least the best single venue's output.",
+      "howToVerify": "Open /, click 'mainnet (read-only)', pick HBAR → USDC, amount 100. Read the plan card: the plan total must be ≥ the row marked 'best single'.",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C3",
+      "statement": "The swap page explains what is missing (wallet, RouterExecutor address, association, approval) instead of failing, when no wallet is connected.",
+      "howToVerify": "Open /swap without a wallet. The execution panel must show a checklist with unmet steps and no crash.",
+      "severity": "critical",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C4",
+      "statement": "The receipts page renders a verification result for any id, saying 'not verified' with a reason when no topic is configured.",
+      "howToVerify": "Open /receipts/anything. A badge 'not verified' and an explanatory message must be visible.",
+      "severity": "major",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C5",
+      "statement": "With a funded testnet signer and NEXT_PUBLIC_ROUTER_EXECUTOR set, executing the plan on /swap produces a HashScan link and a receipt link that verifies.",
+      "howToVerify": "Connect the test signer on testnet, pick HBAR → SAUCE, run the checklist, click Execute, follow the receipt link and confirm 'verified'.",
+      "severity": "major",
+      "walletRequired": true,
+      "verifiableWithoutCredentials": false,
+      "executableWithTestSigner": true
+    }
+  ]
+}

@@ -38,6 +38,7 @@ yarn v3:onboard --net testnet --book 3            # V3 bot onboarding (associati
 yarn v3:place-and-cancel --net testnet --book 3   # V3 resting limit + cancel, raw responses printed
 yarn next:dev | yarn next:build
 node scripts/gate-check.mjs --local  # the bounty gate against this checkout
+yarn harness:doctor | yarn harness:validate | yarn harness:run   # Hedera Harness recipe in .harness/
 ```
 
 ## How to add a venue
@@ -51,7 +52,7 @@ node scripts/gate-check.mjs --local  # the bounty gate against this checkout
 ## Keep it scaffoldable
 
 - `template.json` must stay valid against the create-scaffold-hbar Zod schema (`docs/REFERENCES.md` has it). New env vars go there (`envVars: {key, description}`), in `.env.example`, in the README table and nowhere else.
-- Keep `packages/hardhat`, `packages/nextjs`, root `README.md`, `AGENTS.md`, `LICENSE`. The gate (`scripts/gate-check.mjs`) must stay green: install, lint, tests, build, and every core route returning 200 with **no env configured**.
+- Keep `packages/hardhat`, `packages/nextjs`, root `README.md`, `AGENTS.md`, `LICENSE`, and the tracked `.harness/` recipe (runtime paths `.harness/runs|cache|runtime` stay ignored). The gate (`scripts/gate-check.mjs`) must stay green: install, lint, tests, build, and every core route returning 200 with **no env configured**.
 - No `.env` in git; run `gitleaks git .` before committing. `.yarn/releases` is allow-listed in `.gitleaks.toml`.
 
 ## Hedera rules

@@ -90,9 +90,10 @@ The V3 path is a signed-order flow, not a contract call: authenticate (challenge
 ```bash
 yarn v3:onboard --net testnet --book 3                     # bot account: run every missing onboarding step, re-verified on chain
 yarn v3:place-and-cancel --net testnet --book 3 --input base --amount 10000000 --factor 10   # resting limit far from market, then cancel
+yarn v3:market --net testnet --book 3 --side SELL --amount 10000000 --receipt                 # real market order + HCS receipt
 ```
 
-The bot is `V3_BOT_ACCOUNT_ID` / `V3_BOT_PRIVATE_KEY` (falls back to the deployer key). With a bot configured, `/swap` places V3 market orders server-side and `/orders` lists and cancels them; wallet users get one-click onboarding transactions and the `0x01` personal-sign payload (see [D-9](docs/DEVIATIONS.md)). On 3 Oct 2026 testnet book 3 was halted: build and signature succeeded, `POST /orders/save` answered `Orderbook 3 is currently halted` — recorded verbatim in [docs/TESTNET-EVIDENCE.md](docs/TESTNET-EVIDENCE.md).
+The bot is `V3_BOT_ACCOUNT_ID` / `V3_BOT_PRIVATE_KEY` (falls back to the deployer key). With a bot configured, `/swap` places V3 market orders server-side and `/orders` lists and cancels them; wallet users get one-click onboarding transactions and the `0x01` personal-sign payload (see [D-9](docs/DEVIATIONS.md)). Testnet book 3 was halted on 2 Oct (save refused, recorded verbatim) and reopened on 3 Oct, when `yarn v3:market --receipt` filled 10 SAUCE for 0.426829 USDC and the HCS receipt verified down to the amount received; see [docs/TESTNET-EVIDENCE.md](docs/TESTNET-EVIDENCE.md).
 
 ## Environment variables
 
@@ -148,7 +149,7 @@ yarn harness:run        # let the agent build the PRD and grade it
 
 ## Limitations
 
-- Testnet V3 books are closed or halted (checked 2–3 Oct 2026): onboarding completed and a signed order was built, but `POST /orders/save` refuses the halted book, so a testnet V3 fill cannot be demonstrated. Mainnet V3 execution is implemented but was not run (no mainnet funds).
+- Testnet V3 book 3 was halted on 2 Oct and reopened on 3 Oct; the V3 path then ran for real (a resting order placed and cancelled, two market orders filled, one with a verified HCS receipt). Other testnet books stay closed. Mainnet V3 execution is implemented but was not run (no mainnet funds).
 - V3 wallet signing (`0x01`) is prepared (payload + SignatureMap) but the template's EVM wallet stack has no Hedera WalletConnect session; bot signing (`0x00`) is what the app uses.
 - Lambdaplex is mainnet-only and keyed; this build quotes it (public depth, keyed fee-quote) but does not place orders.
 - Mainnet execution was not exercised in this submission (no mainnet funds); the code paths are implemented and unit-tested, and guarded by the flags above.

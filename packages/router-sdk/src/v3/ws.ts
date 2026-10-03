@@ -105,6 +105,7 @@ export class UserEvents {
 }
 
 const idOf = (e: UserEvent): string | undefined => {
+  // stream events: { type: "ORDER_CANCELED", orderId: "3539170", … }
   const raw =
     e.orderId ??
     e.id ??

@@ -131,6 +131,27 @@ describe("V3 onboarding", () => {
     });
     expect(quote.args?.[1]).toBe(HTS_MAX_ALLOWANCE);
     expect(await maxAllowanceFor(cfg, "0.0.0", fetchImpl)).toBe((1n << 256n) - 1n);
+    // a partly used allowance still counts as done while it covers the next order (fills consume allowance)
+    const used = await checkOnboarding({
+      cfg,
+      publicClient: chain({ erc20: { [book.baseTokenEvmAddress]: 999_989_980_000n }, p2: {} }),
+      account,
+      book,
+      domain,
+      fetchImpl,
+      required: 10_020_001n,
+    });
+    expect(used.steps.find(s => s.key === "approveBaseTokenPermit2")!.done).toBe(true);
+    const tooLow = await checkOnboarding({
+      cfg,
+      publicClient: chain({ erc20: { [book.baseTokenEvmAddress]: 5n }, p2: {} }),
+      account,
+      book,
+      domain,
+      fetchImpl,
+      required: 10_020_001n,
+    });
+    expect(tooLow.steps.find(s => s.key === "approveBaseTokenPermit2")!.done).toBe(false);
     // an allowance at the cap counts as done
     const capped = await checkOnboarding({
       cfg,

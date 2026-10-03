@@ -30,10 +30,20 @@ export type BuildRequest = {
 export type BuiltOrder = V3Order & { meta?: Record<string, unknown> };
 
 export type SavedOrder = {
+  id?: number | string;
+  status?: string;
   info?: { nonce?: string };
-  meta?: { id?: number | string; status?: string; [k: string]: unknown };
+  meta?: { id?: number | string; status?: string; orderHash?: string; [k: string]: unknown };
   [k: string]: unknown;
 };
+
+/** Saved orders carry the id in `meta.id`; listed orders (`GET /orders`) carry it at the top level. */
+export const orderIdOf = (o: SavedOrder): string | undefined => {
+  const id = o.meta?.id ?? o.id ?? (o.orderId as string | number | undefined);
+  return id === undefined || id === null ? undefined : String(id);
+};
+
+export const orderStatusOf = (o: SavedOrder): string | undefined => o.meta?.status ?? o.status;
 
 export type OrderSigner = (order: V3Order, domain: V3Domain) => Promise<Hex>;
 
@@ -252,16 +262,14 @@ export type OrderEvent = {
   [k: string]: unknown;
 };
 
-export const TERMINAL_EVENTS = [
-  "ORDER_FILLED",
-  "ORDER_CANCELED",
-  "ORDER_CANCELLED",
-  "ORDER_EXPIRED",
-  "ORDER_REJECTED",
-  "ORDER_FAILED",
-];
+/** Terminal states. The user-event stream says `ORDER_CANCELED`; `GET /orders/:id/history` says `CANCELED`. */
+export const TERMINAL_EVENTS = ["FILLED", "CANCELED", "CANCELLED", "EXPIRED", "REJECTED", "FAILED"];
 
-export const eventName = (e: OrderEvent): string => String(e.type ?? e.event ?? e.status ?? "").toUpperCase();
+/** Event name with the stream's `ORDER_` prefix removed, so both sources compare equal. */
+export const eventName = (e: OrderEvent): string =>
+  String(e.type ?? e.event ?? e.status ?? "")
+    .toUpperCase()
+    .replace(/^ORDER_/, "");
 
 export const isTerminal = (e: OrderEvent): boolean => TERMINAL_EVENTS.includes(eventName(e));
 

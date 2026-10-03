@@ -41,7 +41,7 @@ export default async function Docs({ searchParams }: { searchParams: Promise<{ d
           </li>
         ))}
       </nav>
-      <article className="prose prose-sm max-w-none bg-base-100 rounded-2xl shadow p-6 border border-base-300 grow overflow-x-auto">
+      <article className="markdown bg-base-100 rounded-2xl shadow p-6 border border-base-300 grow overflow-x-auto">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
       </article>
     </div>

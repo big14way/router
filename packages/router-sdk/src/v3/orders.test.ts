@@ -3,7 +3,7 @@ import { getConfig } from "../config";
 import type { V3Book } from "../venues/SaucerV3";
 import { fakeFetch } from "../venues/testkit";
 import type { V3Auth } from "./auth";
-import { eventName, isTerminal, V3Orders, type BuiltOrder } from "./orders";
+import { eventName, isTerminal, orderIdOf, orderStatusOf, V3Orders, type BuiltOrder } from "./orders";
 
 const cfg = getConfig("testnet");
 const auth = {
@@ -181,11 +181,19 @@ describe("V3Orders", () => {
     expect((await orders.list({ orderbookId: "3", status: "OPEN" })).total).toBe(1);
     expect((await orders.list()).orders).toEqual([]);
     const h = await orders.history(9);
-    expect(h.map(eventName)).toEqual(["ORDER_PLACED", "ORDER_CANCELED"]);
+    expect(h.map(eventName)).toEqual(["PLACED", "CANCELED"]);
     expect(isTerminal(h[1]!)).toBe(true);
     expect(isTerminal(h[0]!)).toBe(false);
     expect((await orders.history(8))[0]).toMatchObject({ transactionHash: "0x1" });
     expect(await orders.cancel([9])).toEqual({ accepted: [9] });
+    // the two id/status shapes the live API returns (save: meta.*, list: top level), and history names without the prefix
+    expect(orderIdOf({ meta: { id: "3539170", status: "ACTIVE" } })).toBe("3539170");
+    expect(orderIdOf({ id: 3539170, status: "CANCELED" })).toBe("3539170");
+    expect(orderIdOf({})).toBeUndefined();
+    expect(orderStatusOf({ meta: { status: "ACTIVE" } })).toBe("ACTIVE");
+    expect(orderStatusOf({ status: "CANCELED" })).toBe("CANCELED");
+    expect(isTerminal({ type: "CANCELED" })).toBe(true);
+    expect(isTerminal({ type: "CREATED" })).toBe(false);
     expect(await orders.cancelAll("100")).toEqual({ accepted: true });
     expect(await orders.fees("3", "taker")).toEqual({ takerFeePips: 2000 });
     expect((await orders.trades("3")).trades[0]!.transactionHash).toBe("0xt");

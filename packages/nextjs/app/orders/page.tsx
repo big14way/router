@@ -6,12 +6,18 @@ import { useAccount } from "wagmi";
 import { notification } from "~~/utils/scaffold-hbar";
 
 type Order = {
+  id?: number | string;
+  status?: string;
   info?: { nonce?: string };
   meta?: { id?: number | string; status?: string; [k: string]: unknown };
   input?: { token: string; amount: string };
   output?: { token: string; amount: string };
   [k: string]: unknown;
 };
+
+// Listed orders carry id/status at the top level; freshly saved ones under `meta`.
+const idOf = (o: Order) => String(o.meta?.id ?? o.id ?? "");
+const statusOf = (o: Order) => String(o.meta?.status ?? o.status ?? "");
 type OrdersResponse = {
   configured: boolean;
   network: string;
@@ -117,9 +123,9 @@ const Orders: NextPage = () => {
                 </thead>
                 <tbody>
                   {data.orders.map(o => (
-                    <tr key={String(o.meta?.id)}>
-                      <td>{String(o.meta?.id)}</td>
-                      <td>{String(o.meta?.status ?? "")}</td>
+                    <tr key={idOf(o)}>
+                      <td>{idOf(o)}</td>
+                      <td>{statusOf(o)}</td>
                       <td>{o.info?.nonce}</td>
                       <td className="font-mono text-xs">
                         {o.input?.amount} {o.input?.token?.slice(0, 10)}…
@@ -131,13 +137,9 @@ const Orders: NextPage = () => {
                         <button
                           className="btn btn-xs btn-outline"
                           disabled={Boolean(busy)}
-                          onClick={() => cancel(o.meta!.id!)}
+                          onClick={() => cancel(idOf(o))}
                         >
-                          {busy === String(o.meta?.id) ? (
-                            <span className="loading loading-spinner loading-xs" />
-                          ) : (
-                            "cancel"
-                          )}
+                          {busy === idOf(o) ? <span className="loading loading-spinner loading-xs" /> : "cancel"}
                         </button>
                       </td>
                     </tr>

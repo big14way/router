@@ -5,7 +5,7 @@ import type { ExecutionPlan, Quote } from "../types";
 import { fakeFetch } from "../venues/testkit";
 import { MAX_CHUNKS, publishReceipt, serializeReceipt, type Submitter } from "./hcs";
 import { receiptFromPlan } from "./types";
-import { parseReceipt, readReceipts, ROUTE_EXECUTED_TOPIC0, verifyReceipt } from "./verify";
+import { mirrorTxId, parseReceipt, readReceipts, ROUTE_EXECUTED_TOPIC0, verifyReceipt } from "./verify";
 
 const cfg = getConfig("testnet");
 const WHBAR = cfg.tokens.WHBAR!;
@@ -261,6 +261,86 @@ describe("verifyReceipt", () => {
       label: "receipt carries a transaction hash",
       ok: false,
     });
+  });
+
+  it("verifies V3 settlements given as an EVM hash and as an SDK-style transaction id", async () => {
+    const v3: Quote = {
+      venue: "SAUCER_V3",
+      bookId: "3",
+      side: "SELL",
+      amountIn: 10n,
+      amountOut: 4n,
+      fillable: true,
+      minNotionalOk: true,
+      fetchedAt: 0,
+    };
+    const hash = "0x" + "07".repeat(32);
+    const trader = "0xf334ebbf2a14108c324e22aec7b421a87aae6039";
+    const off = receiptFromPlan(
+      { ...plan, kind: "V3_MARKET", legs: undefined, order: v3, alternatives: [v3] },
+      { settlementTxIds: [hash, "0.0.6628041@1791023253.931205520"], account: trader, filledOut: 4n },
+      9,
+    );
+    const page = {
+      body: {
+        messages: [
+          {
+            consensus_timestamp: "2.0",
+            message: b64(serializeReceipt(off)),
+            sequence_number: 3,
+            topic_id: "0.0.9",
+            payer_account_id: "0.0.1",
+            chunk_info: null,
+          },
+        ],
+      },
+    };
+    const ok = fakeFetch({
+      "/topics/0.0.9/messages": page,
+      [`/contracts/results/${hash}`]: {
+        body: {
+          result: "SUCCESS",
+          from: "0x00000000000000000000000000000000006522c9",
+          logs: [{ topics: ["0xddf2", `0x${"00".repeat(12)}${trader.slice(2)}`] }],
+        },
+      },
+      "/transactions/0.0.6628041-1791023253-931205520": {
+        body: {
+          transactions: [
+            { nonce: 0, result: "SUCCESS", transfers: [{ account: "0.0.6628041" }], token_transfers: [] },
+            {
+              nonce: 4,
+              result: "SUCCESS",
+              token_transfers: [
+                { account: "0.0.8093816", token_id: SAUCE.id, amount: -4 },
+                { account: "0.0.10833326", token_id: SAUCE.id, amount: 4 },
+              ],
+            },
+          ],
+        },
+      },
+      [`/accounts/${trader}`]: { body: { account: "0.0.10833326" } },
+    });
+    const v = await verifyReceipt(cfg, "0.0.9", off.planHash, ok);
+    expect(v.checks.map(c => [c.label.replace(/0x[0-9a-f]{8}…/, "HASH"), c.ok])).toEqual([
+      ["receipt found on topic 0.0.9", true],
+      ["settlement HASH exists", true],
+      ["settlement HASH succeeded", true],
+      ["settlement moves funds of HASH", true],
+      ["settlement 0.0.6628041@1791023253.931205520 exists", true],
+      ["settlement 0.0.6628041@1791023253.931205520 succeeded", true],
+      ["settlement involves 0.0.10833326", true],
+      [`0.0.10833326 received 4 of ${SAUCE.id}`, true],
+    ]);
+    expect(v.verified).toBe(true);
+    expect(mirrorTxId("0.0.5-1-2")).toBe("0.0.5-1-2");
+    const notMine = fakeFetch({
+      "/topics/0.0.9/messages": page,
+      [`/contracts/results/${hash}`]: { body: { result: "SUCCESS", from: "0x01", logs: [] } },
+      "/transactions/": { body: { transactions: [] } },
+      "/accounts/": { status: 404, body: {} },
+    });
+    expect((await verifyReceipt(cfg, "0.0.9", off.planHash, notMine)).verified).toBe(false);
   });
 
   it("verifies off-chain receipts through /transactions", async () => {

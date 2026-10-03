@@ -106,11 +106,11 @@ describe("awaitTerminal", () => {
 
   it("falls back to polling history and times out", async () => {
     const e = await awaitTerminal(
-      ordersWith([[{ type: "ORDER_PLACED" }], [{ type: "ORDER_PLACED" }, { status: "ORDER_FILLED", txHash: "0x9" }]]),
+      ordersWith([[{ type: "CREATED" }], [{ type: "CREATED" }, { status: "FILLED", txHash: "0x9" }]]),
       "7",
       { timeoutMs: 5000, pollMs: 5 },
     );
-    expect(e).toMatchObject({ status: "ORDER_FILLED" });
+    expect(e).toMatchObject({ status: "FILLED" });
     let t = 0;
     await expect(awaitTerminal(ordersWith([[]]), 1, { timeoutMs: 10, pollMs: 2, now: () => (t += 6) })).rejects.toThrow(
       /terminal state/,

@@ -57,6 +57,7 @@
     "seed:testnet": "tsx scripts/seed-testnet.ts",
     "test": "yarn sdk:test && yarn hardhat:test",
     "topic:create": "tsx scripts/create-topic.ts",
+    "v3:market": "tsx scripts/v3-market.ts",
     "v3:onboard": "tsx scripts/v3-onboard.ts",
     "v3:place-and-cancel": "tsx scripts/v3-place-and-cancel.ts"
   },

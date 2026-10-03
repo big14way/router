@@ -171,20 +171,58 @@ export async function verifyReceipt(
     }
     if (!receipt.txHashes?.length) checks.push({ label: "receipt carries a transaction hash", ok: false });
   } else {
+    const accountId = receipt.account ? await resolveAccountId(cfg, receipt.account, fetchImpl) : undefined;
     for (const txId of receipt.settlementTxIds ?? []) {
       txLinks.push(`${cfg.hashscanUrl}/transaction/${txId}`);
-      const res = await fetchJson<{
-        transactions?: { result: string; transfers?: { account: string }[]; token_transfers?: { account: string }[] }[];
-      }>(`${cfg.mirrorUrl}/api/v1/transactions/${encodeURIComponent(txId)}`, { fetchImpl }).catch(() => undefined);
-      const tx = res?.transactions?.[0];
-      checks.push({ label: `settlement ${txId} exists`, ok: Boolean(tx) });
-      if (!tx) continue;
-      checks.push({ label: `settlement ${txId} succeeded`, ok: tx.result === "SUCCESS", detail: tx.result });
-      if (receipt.account) {
-        const involved = [...(tx.transfers ?? []), ...(tx.token_transfers ?? [])].some(
-          t => t.account === receipt.account,
-        );
-        checks.push({ label: `settlement involves ${receipt.account}`, ok: involved });
+      if (EVM_HASH.test(txId)) {
+        // EVM settlement hash: the contract result must succeed and its logs must touch the trader.
+        const res = await fetchJson<{ result?: string; from?: string; logs?: { topics?: string[]; data?: string }[] }>(
+          `${cfg.mirrorUrl}/api/v1/contracts/results/${txId}`,
+          { fetchImpl },
+        ).catch(() => undefined);
+        checks.push({ label: `settlement ${short(txId)} exists`, ok: Boolean(res?.result) });
+        if (!res?.result) continue;
+        checks.push({ label: `settlement ${short(txId)} succeeded`, ok: res.result === "SUCCESS", detail: res.result });
+        if (receipt.account?.startsWith("0x")) {
+          const needle = receipt.account.toLowerCase().replace(/^0x/, "");
+          const involved =
+            res.from?.toLowerCase().endsWith(needle) ||
+            (res.logs ?? []).some(l => (l.topics ?? []).some(t => t.toLowerCase().endsWith(needle)));
+          checks.push({ label: `settlement moves funds of ${short(receipt.account)}`, ok: Boolean(involved) });
+        }
+        continue;
+      }
+      // A Hedera transaction id returns the parent and its child records (same id, nonce 1..n); token
+      // movements of a contract settlement live on the children, so scan all of them.
+      type MirrorTx = {
+        nonce?: number;
+        result: string;
+        transfers?: { account: string; amount?: number }[];
+        token_transfers?: { account: string; token_id?: string; amount?: number }[];
+      };
+      const res = await fetchJson<{ transactions?: MirrorTx[] }>(
+        `${cfg.mirrorUrl}/api/v1/transactions/${encodeURIComponent(mirrorTxId(txId))}`,
+        { fetchImpl },
+      ).catch(() => undefined);
+      const all = res?.transactions ?? [];
+      const parent = all.find(t => (t.nonce ?? 0) === 0) ?? all[0];
+      checks.push({ label: `settlement ${txId} exists`, ok: Boolean(parent) });
+      if (!parent) continue;
+      checks.push({ label: `settlement ${txId} succeeded`, ok: parent.result === "SUCCESS", detail: parent.result });
+      if (accountId) {
+        const moves = all.flatMap(t => [...(t.transfers ?? []), ...(t.token_transfers ?? [])]);
+        checks.push({ label: `settlement involves ${accountId}`, ok: moves.some(m => m.account === accountId) });
+        if (receipt.filledOut && receipt.tokenOut !== "0.0.0") {
+          const received = all
+            .flatMap(t => t.token_transfers ?? [])
+            .filter(m => m.account === accountId && m.token_id === receipt.tokenOut && (m.amount ?? 0) > 0)
+            .reduce((sum, m) => sum + BigInt(m.amount ?? 0), 0n);
+          checks.push({
+            label: `${accountId} received ${receipt.filledOut} of ${receipt.tokenOut}`,
+            ok: received === BigInt(receipt.filledOut),
+            detail: received.toString(),
+          });
+        }
       }
     }
     if (!receipt.settlementTxIds?.length)
@@ -203,3 +241,24 @@ export async function verifyReceipt(
 }
 
 const short = (h: string) => `${h.slice(0, 10)}…`;
+
+const EVM_HASH = /^0x[0-9a-fA-F]{64}$/;
+
+/** `0.0.6628041@1791023253.931205520` (SDK / API form) → `0.0.6628041-1791023253-931205520` (mirror form). */
+export const mirrorTxId = (id: string): string => {
+  const m = /^(\d+\.\d+\.\d+)@(\d+)\.(\d+)$/.exec(id);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : id;
+};
+
+/** Receipts record the trader as an EVM address or an account id; transfers on the mirror use account ids. */
+async function resolveAccountId(
+  cfg: NetworkConfig,
+  account: string,
+  fetchImpl?: typeof fetch,
+): Promise<string | undefined> {
+  if (/^\d+\.\d+\.\d+$/.test(account)) return account;
+  const r = await fetchJson<{ account?: string }>(`${cfg.mirrorUrl}/api/v1/accounts/${account}`, { fetchImpl }).catch(
+    () => undefined,
+  );
+  return r?.account;
+}

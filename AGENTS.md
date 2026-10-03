@@ -36,6 +36,7 @@ yarn seed:testnet                    # TKA/TKB tokens + V1 pairs (+ V2 pool when
 yarn execute:plan --net testnet --in TKA --out TKB --amount 1000   # plan → RouterExecutor → HCS receipt → verify
 yarn v3:onboard --net testnet --book 3            # V3 bot onboarding (association, Permit2, reactor)
 yarn v3:place-and-cancel --net testnet --book 3   # V3 resting limit + cancel, raw responses printed
+yarn v3:market --net testnet --book 3 --side SELL --amount 10000000 --receipt   # real V3 market order + HCS receipt
 yarn next:dev | yarn next:build
 node scripts/gate-check.mjs --local  # the bounty gate against this checkout
 yarn harness:doctor | yarn harness:validate | yarn harness:run   # Hedera Harness recipe in .harness/

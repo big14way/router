@@ -127,3 +127,24 @@ Onboarding transactions (all `SUCCESS`, re-verified on chain after each; approva
 After: chain = all six steps true; `GET /onboarding/3/status` → `{"isComplete":true,"pendingSteps":[]}`. Failed earlier attempts are also on HashScan: `0xabf165f6…`/`0x494e8ccd…` (`INVALID_OPERATION`, approval above int64) and `0xb3b809c2…`/`0x5c5e178e…` (HTS code 289 `AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY`, approval above max supply).
 
 Place-and-cancel rerun on the fully onboarded account: build 200, signature ok, `POST /orders/save` → `400 {"error":"Orderbook 3 is currently halted and not accepting new orders"}`. The halt is the only thing between this account and a resting order on testnet; the same code path is what `/api/v3/execute` and the `/swap` page run.
+
+
+## SaucerSwap V3 executed on testnet (3 Oct 2026, book 3 reopened)
+
+Later on 3 Oct testnet book 3 (SAUCE/USDC) came back `OPEN`, `isMarketHalted:0`, with live depth (16 asks, 24 bids) and other bots trading. The same code then ran the full V3 path for real.
+
+| Proof | Command | Result |
+|---|---|---|
+| Resting limit, then cancel | `yarn v3:place-and-cancel --net testnet --book 3 --input base --amount 10000000 --factor 10` | order **3539170** (sell 10 SAUCE at 10× market) saved `ACTIVE`, `POST /cancel` → `{"status":"PENDING","accepted":[3539170]}`, `ORDER_CANCELED` received on `/ws/user-events` (`reason:"USER"`), history `CREATED → CANCELED` |
+| Market order through `execute/v3.ts` | `yarn v3:market --net testnet --book 3 --side SELL --amount 10000000` | order **3539319** `FILLED` 1.2 s after save; settlement [`0x0741ce80…`](https://hashscan.io/testnet/transaction/0x0741ce80c5f12f79cd894a9118a8f1a1c425477d232d6fa60b63de066bc9a327) |
+| Market order + HCS receipt | `yarn v3:market --net testnet --book 3 --side SELL --amount 10000000 --receipt` | order **3539436** `FILLED`: 10 SAUCE in, **0.426829 USDC** out (history `fill.outputAmount`), settlement [`0xc5497d6f…`](https://hashscan.io/testnet/transaction/0xc5497d6fdc4f0a382cadf9aea3809be7716878851c275f23aa8a80c13138800a) = Hedera transaction `0.0.6628041@1791023444.071856368`; receipt **sequence 4** on topic 0.0.10833350 |
+
+Receipt 4 verification (`/receipts/4`, same code as `/api/receipt`): receipt found ✅ · EVM settlement exists and succeeded ✅ · its logs move funds of `0xf334…6039` ✅ · Hedera transaction exists and succeeded ✅ · child records involve 0.0.10833326 ✅ · **0.0.10833326 received 426829 of 0.0.5449** ✅ → verified. Mirror: https://testnet.mirrornode.hedera.com/api/v1/transactions/0.0.6628041-1791023444-071856368 (nonce 4: +426829 USDC to the trader; nonce 5: −9.98 SAUCE to the counterparty; nonce 6: −0.04 SAUCE taker fee to the reactor 0.0.9860931).
+
+The router itself does not choose V3 on testnet today: the testnet AMM pools price SAUCE/USDC differently from the book, so V2 pays more and V3 fails the 5 bps rule (`excluded: V3 output not ≥ best AMM + 5 bps`). The market orders above call the V3 executor directly on a `V3_MARKET` plan built from the V3 adapter's quote, exactly what `/swap` runs when V3 wins.
+
+Running against the live API also corrected three assumptions, now covered by tests: history events are `CREATED/FILLED/CANCELED` while the stream sends `ORDER_*`; listed orders carry `id` at the top level; the executed amounts come from the history `fill` object (the stream's `executedPrice` is the order's limit price). Fills consume the standing Permit2 allowance, so onboarding now checks the allowance against the next order's size, not the original cap.
+
+### Demo pool rebalance before the video
+
+The two-leg split above moved the seeded TKA/TKB direct pair from 1 TKA = 2.2 TKB to 1.977. Before recording, one plain V1 swap (sell 1148.82 TKB into the direct pair, tx [`0xd1b9cc7f…`](https://hashscan.io/testnet/transaction/0xd1b9cc7fcd97c420fb20bb324d07fae6f6688cd54c3597da7be27b2fcf7e2acb)) restored the seeded 2.2 price so the on-camera plan shows the effect the demo pools were built for.

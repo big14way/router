@@ -1,6 +1,7 @@
 import type { Address, Hex } from "viem";
 import type { NetworkConfig } from "../config";
 import type { ExecutionPlan, ExecutionResult } from "../types";
+import { parseUnits } from "../units";
 import type { V3Book } from "../venues/SaucerV3";
 import type { V3Auth } from "./../v3/auth";
 import {
@@ -11,7 +12,7 @@ import {
   type OnboardingWallet,
   type ReadClient,
 } from "../v3/onboarding";
-import { V3Orders, type OrderEvent, type OrderSigner } from "../v3/orders";
+import { eventName, orderIdOf, V3Orders, type OrderEvent, type OrderSigner } from "../v3/orders";
 import { awaitTerminal, type UserEvents } from "../v3/ws";
 
 /**
@@ -75,6 +76,8 @@ export async function executeV3(plan: ExecutionPlan, o: V3ExecuteOptions): Promi
   const domain = await fetchDomain(o.cfg, o.fetchImpl);
 
   o.onStep?.("onboarding", `book ${book.id}`);
+  // The taker fee is pulled on top of the input, so the standing allowance must cover input + fee.
+  const required = plan.amountIn + (plan.amountIn * BigInt(book.takerFeePips ?? 0)) / 1_000_000n + 1n;
   const base = {
     cfg: o.cfg,
     publicClient: o.publicClient,
@@ -83,6 +86,7 @@ export async function executeV3(plan: ExecutionPlan, o: V3ExecuteOptions): Promi
     domain,
     auth: o.auth,
     fetchImpl: o.fetchImpl,
+    required,
   };
   const report = o.walletClient
     ? await runOnboarding({ ...base, walletClient: o.walletClient })
@@ -99,17 +103,18 @@ export async function executeV3(plan: ExecutionPlan, o: V3ExecuteOptions): Promi
   }
   o.onStep?.("place", `market ${request.inputAmount} → ≥ ${request.outputAmount}`);
   const { saved, built } = await orders.place(request, o.sign);
-  const orderId = String(saved.meta?.id ?? "");
+  const orderId = orderIdOf(saved) ?? "";
   if (!orderId) throw new Error(`save returned no order id (status ${saved.meta?.status})`);
   o.onStep?.("saved", `order ${orderId} status ${saved.meta?.status}`);
 
   const terminal = await awaitTerminal(orders, orderId, { events: o.events, timeoutMs: o.timeoutMs });
   o.onStep?.("terminal", terminalName(terminal));
-  if (terminalName(terminal) !== "ORDER_FILLED")
-    throw new Error(`order ${orderId} ended with ${terminalName(terminal)}`);
-  const settlement = settlementIds(terminal, await orders.history(orderId));
-  const filledOut = BigInt(String(terminal.filledOutput ?? terminal.outputAmount ?? quote.expectedOutputAmount));
-  const filledIn = BigInt(String(terminal.filledInput ?? terminal.inputAmount ?? request.inputAmount));
+  if (terminalName(terminal) !== "FILLED") throw new Error(`order ${orderId} ended with ${terminalName(terminal)}`);
+  const history = await orders.history(orderId);
+  const settlement = settlementIds(terminal, history);
+  const fill = fillTotals(terminal, history, plan.tokenIn.decimals, plan.tokenOut.decimals);
+  const filledIn = fill?.filledIn ?? BigInt(request.inputAmount);
+  const filledOut = fill?.filledOut ?? BigInt(quote.expectedOutputAmount);
   return {
     kind: plan.kind,
     planHash: plan.planHash,
@@ -120,13 +125,13 @@ export async function executeV3(plan: ExecutionPlan, o: V3ExecuteOptions): Promi
   };
 }
 
-const terminalName = (e: OrderEvent): string => String(e.type ?? e.event ?? e.status ?? "").toUpperCase();
+const terminalName = (e: OrderEvent): string => eventName(e);
 
 /** Settlement transaction ids/hashes from the terminal event and the history (either field name the API uses). */
 export function settlementIds(terminal: OrderEvent, history: OrderEvent[]): string[] {
   const ids = new Set<string>();
   for (const e of [terminal, ...history]) {
-    for (const k of ["transactionHash", "txHash", "transactionId", "settlementTransactionId"]) {
+    for (const k of ["transactionHash", "txHash", "transactionId", "txId", "settlementTransactionId"]) {
       const v = e[k];
       if (typeof v === "string" && v) ids.add(v);
     }
@@ -137,6 +142,42 @@ export function settlementIds(terminal: OrderEvent, history: OrderEvent[]): stri
     }
   }
   return [...ids];
+}
+
+type HistoryFill = { inputAmount?: string; outputAmount?: string };
+
+/**
+ * Executed amounts in smallest units. `GET /orders/:id/history` FILLED events carry the settlement
+ * (`fill.inputAmount` / `fill.outputAmount`, human units of the input and output token); that is
+ * authoritative. The stream's `executedPrice` is the order's limit price, so it is only a fallback.
+ */
+export function fillTotals(
+  terminal: OrderEvent,
+  history: OrderEvent[],
+  decIn: number,
+  decOut: number,
+): { filledIn: bigint; filledOut: bigint } | undefined {
+  const fills = history
+    .map(h => h.fill as HistoryFill | null | undefined)
+    .filter((f): f is HistoryFill => Boolean(f?.inputAmount && f?.outputAmount));
+  if (fills.length) {
+    return fills.reduce(
+      (acc, f) => ({
+        filledIn: acc.filledIn + parseUnits(f.inputAmount!, decIn),
+        filledOut: acc.filledOut + parseUnits(f.outputAmount!, decOut),
+      }),
+      { filledIn: 0n, filledOut: 0n },
+    );
+  }
+  const qty = (terminal.cumFilledQty ?? terminal.fillQty) as string | undefined;
+  const price = terminal.executedPrice as string | undefined;
+  if (!qty || !price) return undefined;
+  const side = String(terminal.side ?? "").toLowerCase();
+  // stream quantities are in base units; price is quote per base
+  const [decBase, decQuote] = side === "buy" ? [decOut, decIn] : [decIn, decOut];
+  const base = parseUnits(qty, decBase);
+  const quote = (base * parseUnits(price, 12) * 10n ** BigInt(decQuote)) / (10n ** 12n * 10n ** BigInt(decBase));
+  return side === "buy" ? { filledIn: quote, filledOut: base } : { filledIn: base, filledOut: quote };
 }
 
 export type { V3Book };

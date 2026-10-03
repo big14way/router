@@ -10,7 +10,7 @@
 | HCS receipt | https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.10833350/messages/2 (topic https://hashscan.io/testnet/topic/0.0.10833350) |
 | RouterExecutor | https://hashscan.io/testnet/contract/0x4d0049980a29A6C583163883D102F13AB6C74274 (0.0.10833336) |
 | Second proof (single leg, HBAR in) | https://hashscan.io/testnet/transaction/0xe9f81b5e98fa4e56e7df317f5106a96d63e52bc00fe4dace37b62703d11dc519, receipt sequence 1 |
-| V3 attempt (halted testnet book) | `docs/TESTNET-EVIDENCE.md` → "SaucerSwap V3 on testnet": onboarding transactions + verbatim `Orderbook 3 is currently halted` |
+| V3 order book, executed | Market order 3539436 filled on testnet book 3: https://hashscan.io/testnet/transaction/0xc5497d6fdc4f0a382cadf9aea3809be7716878851c275f23aa8a80c13138800a, receipt sequence 4 verified to the amount received (`docs/TESTNET-EVIDENCE.md`); resting order 3539170 placed and cancelled |
 | CI | `.github/workflows/ci.yml` (lint, type checks, coverage, tests, build, scaffold gate, gitleaks) |
 | Harness recipe | `.harness/` (spec, PRD, static + command validators, Playwright gate, acceptance contract); `yarn harness:validate` |
 | Docs | `README.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/VENUES.md`, `docs/HEDERA-GOTCHAS.md`, `docs/REFERENCES.md`, `docs/DEVIATIONS.md`, `docs/TESTNET-EVIDENCE.md`, `docs/MAINNET-EVIDENCE.md` |
@@ -19,7 +19,7 @@
 
 | Metric | Value |
 |---|---|
-| SDK unit tests | 101 (vitest), lines ≈ 97 % |
+| SDK unit tests | 103 (vitest), lines ≈ 97 % |
 | RouterExecutor tests | 11, statements/lines 100 % |
 | Lint | zero warnings across the three workspaces |
 | Core routes with no env | `/`, `/swap`, `/orders`, `/receipts/[id]`, `/docs` all 200 (checked by `scripts/gate-check.mjs`) |
@@ -36,4 +36,5 @@
 - HTS costs: every system-contract call is ~700k gas; a new V1 pair needs ~12 M gas; `executeSplit` ~3.3 M for two legs.
 - HTS allowances are bounded by int64 and by the token's `max_supply` (code 289) — easy to hit with "unlimited" approvals (D-10).
 - The V3 Orderbook API docs omit the EIP-712 order types, the auth signature format and the build body key; all three had to be recovered from the verified reactor source and live probing (REFERENCES, Phase 7).
-- Testnet V3 books are closed/halted and V2 pool creation costs 1e16 tinycent on testnet (D-8), which limits what can be demonstrated there.
+- Testnet V3 books are mostly closed (book 3 was halted on 2 Oct and reopened on 3 Oct), and V2 pool creation costs 1e16 tinycent on testnet (D-8), which limits what can be demonstrated there.
+- The V3 API's history and stream use different event names (`FILLED` vs `ORDER_FILLED`) and different id fields for saved vs listed orders; executed amounts are only in the history `fill` object.

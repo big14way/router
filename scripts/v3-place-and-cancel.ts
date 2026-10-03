@@ -7,7 +7,7 @@
  */
 import type { Address } from "viem";
 import { PrivateKey } from "@hiero-ledger/sdk";
-import { awaitTerminal, bookStatus, signOrderEcdsa, signOrderEd25519, UserEvents, type OrderSigner } from "../packages/router-sdk/src";
+import { awaitTerminal, bookStatus, orderIdOf, signOrderEcdsa, signOrderEd25519, UserEvents, type OrderSigner } from "../packages/router-sdk/src";
 import { botContext, log, opt, raw } from "./v3-lib";
 
 async function main() {
@@ -47,9 +47,9 @@ async function main() {
     return;
   }
   raw("saved order", placed.saved);
-  const id = String(placed.saved.meta?.id ?? "");
+  const id = orderIdOf(placed.saved) ?? "";
   const listed = await ctx.orders.list({ orderbookId: book.id });
-  raw("GET /orders", { total: listed.total, ids: listed.orders.map(o => o.meta?.id), found: listed.orders.some(o => String(o.meta?.id) === id) });
+  raw("GET /orders", { total: listed.total, ids: listed.orders.map(orderIdOf), found: listed.orders.some(o => orderIdOf(o) === id) });
 
   const events = new UserEvents(ctx.cfg, ctx.auth, { books: [book.id], onEvent: e => raw("user-event", e) });
   await events.connect().catch(e => log(`user-events socket unavailable (${String(e).slice(0, 80)}); polling history instead`));

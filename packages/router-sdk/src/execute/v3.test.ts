@@ -6,7 +6,7 @@ import type { V3Book } from "../venues/SaucerV3";
 import { fakeFetch } from "../venues/testkit";
 import type { V3Auth } from "../v3/auth";
 import { MAX_UINT160 } from "../v3/onboarding";
-import { assertMainnetAllowed, executeV3, OnboardingRequired, settlementIds } from "./v3";
+import { assertMainnetAllowed, executeV3, fillTotals, OnboardingRequired, settlementIds } from "./v3";
 
 const cfg = getConfig("mainnet");
 const account = "0x00000000000000000000000000000000000000aa" as const;
@@ -109,8 +109,8 @@ const routes = (over: Record<string, unknown> = {}) => ({
   "/orders/99/history": {
     body: {
       events: [
-        { type: "ORDER_PLACED" },
-        { type: "ORDER_FILLED", transactionHash: "0.0.5-1-2", filledInput: "100000000", filledOutput: "1310000" },
+        { type: "CREATED" },
+        { type: "FILLED", txHash: "0.0.5-1-2", fill: { inputAmount: "100", outputAmount: "1.31", price: "0.0131" } },
       ],
     },
   },
@@ -188,7 +188,7 @@ describe("executeV3", () => {
         env,
       }),
     ).rejects.toThrow(/below the plan floor/);
-    const canceled = fakeFetch(routes({ "/orders/99/history": { body: { events: [{ type: "ORDER_CANCELED" }] } } }));
+    const canceled = fakeFetch(routes({ "/orders/99/history": { body: [{ type: "CANCELED", reason: "USER" }] } }));
     await expect(
       executeV3(plan, {
         cfg,
@@ -201,7 +201,7 @@ describe("executeV3", () => {
         env,
         timeoutMs: 1000,
       }),
-    ).rejects.toThrow(/ended with ORDER_CANCELED/);
+    ).rejects.toThrow(/ended with CANCELED/);
     const noId = fakeFetch(routes({ "/orders/save": { body: { orders: [{ meta: { status: "REJECTED" } }] } } }));
     await expect(
       executeV3(plan, {
@@ -244,6 +244,20 @@ describe("executeV3", () => {
     expect(() => assertMainnetAllowed("mainnet", undefined, env)).toThrow(/USD notional/);
     expect(() => assertMainnetAllowed("mainnet", 25, env)).toThrow(/exceeds MAINNET_MAX_NOTIONAL_USD=20/);
     expect(() => assertMainnetAllowed("mainnet", 5, env)).not.toThrow();
+  });
+
+  it("derives executed amounts from history fills, else from the stream event", () => {
+    const hist = [
+      { type: "CREATED" },
+      { type: "FILLED", fill: { inputAmount: "10", outputAmount: "0.428192" } },
+      { type: "FILLED", fill: { inputAmount: "5", outputAmount: "0.2" } },
+    ];
+    expect(fillTotals({ type: "ORDER_FILLED" }, hist, 6, 6)).toEqual({ filledIn: 15_000_000n, filledOut: 628_192n });
+    const sell = { type: "ORDER_FILLED", side: "sell", cumFilledQty: "10", executedPrice: "0.0412202" };
+    expect(fillTotals(sell, [], 6, 6)).toEqual({ filledIn: 10_000_000n, filledOut: 412_202n });
+    const buy = { type: "ORDER_FILLED", side: "buy", fillQty: "100", executedPrice: "0.05" };
+    expect(fillTotals(buy, [], 6, 8)).toEqual({ filledIn: 5_000_000n, filledOut: 10_000_000_000n });
+    expect(fillTotals({ type: "FILLED" }, [], 6, 6)).toBeUndefined();
   });
 
   it("collects settlement ids from events and fills", () => {

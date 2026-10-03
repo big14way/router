@@ -88,6 +88,12 @@ export type OnboardingOptions = {
   fetchImpl?: typeof fetch;
   /** Amount to approve (default: unlimited). */
   amount?: bigint;
+  /**
+   * Input the next order needs (incl. fee headroom). A step counts as done when the standing allowance
+   * still covers it; fills consume allowance, so comparing against the approved cap would flag a
+   * healthy account as un-onboarded. Default 1 (any live allowance).
+   */
+  required?: bigint;
   /** Permit2 expiration (default: max uint48). */
   expiration?: bigint;
 };
@@ -119,6 +125,7 @@ export async function checkOnboarding(o: OnboardingOptions): Promise<OnboardingR
   const reactor = o.domain.verifyingContract;
   const permit2 = await readPermit2(o.publicClient, reactor);
   const amount = o.amount ?? MAX_UINT160;
+  const need = o.required ?? 1n;
   const expiration = o.expiration ?? MAX_UINT48;
   const tokens: { side: "Base" | "Quote"; id: string; evm: Address; symbol: string | null }[] = [
     {
@@ -158,7 +165,7 @@ export async function checkOnboarding(o: OnboardingOptions): Promise<OnboardingR
         })) as bigint);
     const htsCap = native ? MAX_UINT256 : await maxAllowanceFor(o.cfg, t.id, o.fetchImpl);
     const erc20Target = amount < htsCap ? amount : htsCap;
-    const p2ok = erc20Allowance >= erc20Target;
+    const p2ok = erc20Allowance >= need;
     steps.push({
       key: `approve${t.side}TokenPermit2`,
       label: `Approve Permit2 to spend ${t.symbol ?? t.id}`,
@@ -184,7 +191,7 @@ export async function checkOnboarding(o: OnboardingOptions): Promise<OnboardingR
           functionName: "allowance",
           args: [o.account, t.evm, reactor],
         })) as readonly [bigint, number | bigint, number | bigint]);
-    const rok = BigInt(p2amount) >= amount && BigInt(p2exp) > nowSec;
+    const rok = BigInt(p2amount) >= need && BigInt(p2exp) > nowSec;
     steps.push({
       key: `approve${t.side}TokenReactor`,
       label: `Approve the reactor inside Permit2 for ${t.symbol ?? t.id}`,
